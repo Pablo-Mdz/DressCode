@@ -1,16 +1,19 @@
 import { useEffect, type ReactNode } from "react";
-import { CloseIcon } from "./Icons";
 
-// Panel inferior (bottom sheet) para formularios y confirmaciones.
+// Panel inferior al estilo iOS: "Cancelar" a la izquierda, título y acción opcional a la derecha.
 export default function Sheet({
   open,
   onClose,
   title,
+  action,
+  cancelLabel = "Cancelar",
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
+  action?: { label: string; onClick: () => void; disabled?: boolean };
+  cancelLabel?: string;
   children: ReactNode;
 }) {
   useEffect(() => {
@@ -28,13 +31,21 @@ export default function Sheet({
   return (
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-grabber" aria-hidden />
         <div className="sheet-head">
-          <h2 className="sheet-title">{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
-            <CloseIcon />
+          <button className="text-btn" onClick={onClose}>
+            {cancelLabel}
           </button>
+          <h2 className="sheet-title">{title}</h2>
+          {action ? (
+            <button className="text-btn strong" onClick={action.onClick} disabled={action.disabled}>
+              {action.label}
+            </button>
+          ) : (
+            <span />
+          )}
         </div>
-        {children}
+        <div className="sheet-body">{children}</div>
       </div>
     </div>
   );

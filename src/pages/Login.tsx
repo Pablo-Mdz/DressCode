@@ -10,7 +10,6 @@ import {
 } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import Wordmark from "../components/Wordmark";
-import Ornament from "../components/Ornament";
 import { GoogleIcon } from "../components/Icons";
 
 type Mode = "login" | "signup" | "reset";
@@ -83,78 +82,81 @@ export default function Login() {
 
   return (
     <div className="login">
-      <div className="majolica-bg" aria-hidden />
-      <div className="login-card reveal">
-        <div className="login-crest">
-          <Wordmark size="lg" />
-          <p className="tagline">Tu ropero · Tu estilo</p>
-          <Ornament />
-        </div>
+      <div className="login-crest">
+        <Wordmark />
+        <span className="crest-line" aria-hidden />
+        <p className="tagline">Tu ropero, con criterio</p>
+      </div>
 
-        <h1 className="login-title">
-          {mode === "login" ? "Bienvenido" : mode === "signup" ? "Crear cuenta" : "Recuperar acceso"}
-        </h1>
-
-        <form onSubmit={submit} className="form">
-          {mode === "signup" && (
-            <label className="field">
-              <span>Nombre</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" required />
-            </label>
-          )}
+      <form onSubmit={submit} className="form login-form">
+        {mode !== "login" && (
+          <h1 className="login-title">{mode === "signup" ? "Crear cuenta" : "Recuperar acceso"}</h1>
+        )}
+        {mode === "signup" && (
           <label className="field">
-            <span>Email</span>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+            <span>Nombre</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" required />
           </label>
-          {mode !== "reset" && (
-            <label className="field">
-              <span>Contraseña</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                minLength={6}
-                required
-              />
-            </label>
-          )}
-
-          {error && <p className="msg msg-error">{error}</p>}
-          {info && <p className="msg msg-info">{info}</p>}
-
-          <button className="btn btn-gold btn-block" disabled={busy}>
-            {busy ? "Un momento…" : mode === "login" ? "Entrar" : mode === "signup" ? "Crear cuenta" : "Enviar enlace"}
-          </button>
-        </form>
-
+        )}
+        <label className="field">
+          <span>Email</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="nombre@email.com"
+            autoComplete="email"
+            required
+          />
+        </label>
         {mode !== "reset" && (
-          <>
-            <div className="or">
-              <span>o</span>
-            </div>
-            <button className="btn btn-ivory btn-block btn-google" onClick={google} type="button">
-              <GoogleIcon /> Continuar con Google
-            </button>
-          </>
+          <label className="field">
+            <span>Contraseña</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              minLength={6}
+              required
+            />
+          </label>
         )}
 
-        <div className="login-links">
-          {mode === "login" ? (
-            <>
-              <button className="link" onClick={() => switchMode("signup")}>
-                ¿No tenés cuenta? <strong>Registrate</strong>
-              </button>
-              <button className="link" onClick={() => switchMode("reset")}>
-                Olvidé mi contraseña
-              </button>
-            </>
-          ) : (
-            <button className="link" onClick={() => switchMode("login")}>
-              Ya tengo cuenta · <strong>Entrar</strong>
+        {error && <p className="msg msg-error">{error}</p>}
+        {info && <p className="msg msg-info">{info}</p>}
+
+        <button className="btn btn-primary btn-block" disabled={busy}>
+          {busy ? "Un momento…" : mode === "login" ? "Entrar" : mode === "signup" ? "Crear cuenta" : "Enviar enlace"}
+        </button>
+      </form>
+
+      {mode !== "reset" && (
+        <>
+          <div className="or">
+            <span>o</span>
+          </div>
+          <button className="btn btn-outline btn-block" onClick={google} type="button">
+            <GoogleIcon /> Continuar con Google
+          </button>
+        </>
+      )}
+
+      <div className="login-links">
+        {mode === "login" ? (
+          <>
+            <button className="link" onClick={() => switchMode("signup")}>
+              ¿No tenés cuenta? <strong>Registrate</strong>
             </button>
-          )}
-        </div>
+            <button className="link" onClick={() => switchMode("reset")}>
+              Olvidé mi contraseña
+            </button>
+          </>
+        ) : (
+          <button className="link" onClick={() => switchMode("login")}>
+            Ya tengo cuenta · <strong>Entrar</strong>
+          </button>
+        )}
       </div>
     </div>
   );

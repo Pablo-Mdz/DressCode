@@ -31,7 +31,7 @@ function uid(): string {
   return id;
 }
 
-export const userCol = (name: "folders" | "garments" | "outfits") => collection(db, "users", uid(), name);
+export const userCol = (name: "folders" | "garments" | "outfits" | "shoppingList") => collection(db, "users", uid(), name);
 
 // La primera vez que el usuario entra le creamos las carpetas por defecto.
 export async function ensureDefaultFolders(userId: string) {

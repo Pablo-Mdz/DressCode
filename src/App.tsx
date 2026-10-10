@@ -8,6 +8,7 @@ import Ropero from "./pages/Ropero";
 import Carpeta from "./pages/Carpeta";
 import DayStyle from "./pages/DayStyle";
 import Historial from "./pages/Historial";
+import Shopping from "./pages/Shopping";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/ropero" element={<Ropero />} />
         <Route path="/ropero/:folderId" element={<Carpeta />} />
         <Route path="/day-style" element={<DayStyle />} />
+        <Route path="/shopping" element={<Shopping />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="*" element={<Navigate to="/ropero" replace />} />
       </Route>

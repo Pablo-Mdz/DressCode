@@ -1,8 +1,6 @@
 import type { Garment, Suggestion } from "../lib/types";
 import { CheckIcon } from "./Icons";
 
-const ROMAN = ["I", "II", "III"];
-
 export default function OutfitCard({
   suggestion,
   index,
@@ -19,24 +17,18 @@ export default function OutfitCard({
   delay?: number;
 }) {
   return (
-    <article className={`look reveal ${chosen ? "look-chosen" : ""}`} style={{ animationDelay: `${delay}ms` }}>
-      <header className="look-head">
-        <span className="look-num">{ROMAN[index] ?? index + 1}</span>
-        <h3 className="look-title">{suggestion.title}</h3>
-        {chosen && (
-          <span className="look-badge">
-            <CheckIcon width={14} height={14} /> Elegido
-          </span>
-        )}
-      </header>
+    <article className="look fade-in" style={{ animationDelay: `${delay}ms` }}>
+      <div className="look-head">
+        <span className="look-num">{String(index + 1).padStart(2, "0")}</span>
+        <h2 className="look-title">{suggestion.title}</h2>
+      </div>
 
-      <div className={`look-collage n${Math.min(suggestion.garment_ids.length, 5)}`}>
+      <div className="look-grid">
         {suggestion.garment_ids.map((id) => {
           const g = garments[id];
-          const url = g?.thumb_url;
           return (
-            <div key={id} className="frame look-piece">
-              {url ? <img src={url} alt={g?.description ?? "Prenda"} /> : <span className="gone">Prenda eliminada</span>}
+            <div key={id} className="photo look-piece">
+              {g ? <img src={g.thumb_url} alt={g.description ?? "Prenda"} /> : <span className="gone">Prenda eliminada</span>}
             </div>
           );
         })}
@@ -44,16 +36,22 @@ export default function OutfitCard({
 
       <p className="look-text">{suggestion.explanation}</p>
       {suggestion.tip && (
-        <p className="look-tip">
-          <span>Consejo</span> {suggestion.tip}
-        </p>
+        <div className="tip">
+          <span className="eyebrow">Consejo</span>
+          <p>{suggestion.tip}</p>
+        </div>
       )}
 
-      {onChoose && !chosen && (
-        <button className="btn btn-ghost btn-block" onClick={onChoose}>
-          Elegir este look
-        </button>
-      )}
+      {onChoose &&
+        (chosen ? (
+          <button className="btn btn-primary btn-block" onClick={onChoose}>
+            <CheckIcon width={18} height={18} /> Elegido
+          </button>
+        ) : (
+          <button className="btn btn-outline-dark btn-block" onClick={onChoose}>
+            Elegir este look
+          </button>
+        ))}
     </article>
   );
 }

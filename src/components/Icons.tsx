@@ -6,7 +6,7 @@ const base = (props: SVGProps<SVGSVGElement>) => ({
   viewBox: "0 0 24 24",
   fill: "none",
   stroke: "currentColor",
-  strokeWidth: 1.4,
+  strokeWidth: 1.5,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
   "aria-hidden": true,
@@ -20,20 +20,24 @@ export const HangerIcon = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export const CrownIcon = (p: SVGProps<SVGSVGElement>) => (
+export const SparkleIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
-    <path d="M4.5 17 3.5 7.5l4.8 4.2L12 5l3.7 6.7 4.8-4.2-1 9.5Z" />
-    <path d="M5 20h14" />
-    <circle cx="12" cy="13.2" r=".9" fill="currentColor" />
+    <path d="M12 3c.6 4.2 2.8 6.4 7 7-4.2.6-6.4 2.8-7 7-.6-4.2-2.8-6.4-7-7 4.2-.6 6.4-2.8 7-7Z" />
+    <path d="M19 16c.2 1.5 1 2.3 2.5 2.5-1.5.2-2.3 1-2.5 2.5-.2-1.5-1-2.3-2.5-2.5 1.5-.2 2.3-1 2.5-2.5Z" />
   </svg>
 );
 
-export const ScrollIcon = (p: SVGProps<SVGSVGElement>) => (
+export const BagIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
-    <path d="M7 4h11a2 2 0 0 1 2 2v1h-4" />
-    <path d="M16 7v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1h10" />
-    <path d="M7 4a2 2 0 0 0-2 2v11" />
-    <path d="M9 9h4M9 12.5h4" />
+    <path d="M5 8h14l-1 12H6L5 8Z" />
+    <path d="M9 8V6.5a3 3 0 0 1 6 0V8" />
+  </svg>
+);
+
+export const ClockIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
   </svg>
 );
 
@@ -52,7 +56,7 @@ export const CameraIcon = (p: SVGProps<SVGSVGElement>) => (
 
 export const GalleryIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
-    <rect x="4" y="4" width="16" height="16" rx="1.5" />
+    <rect x="4" y="4" width="16" height="16" rx="2" />
     <circle cx="9" cy="9.5" r="1.5" />
     <path d="m4.5 17 4.5-4.5 3.5 3.5 2.5-2.5 4.5 4.5" />
   </svg>
@@ -71,14 +75,14 @@ export const EditIcon = (p: SVGProps<SVGSVGElement>) => (
 );
 
 export const BackIcon = (p: SVGProps<SVGSVGElement>) => (
-  <svg {...base(p)}>
+  <svg {...base({ strokeWidth: 1.8, ...p })}>
     <path d="M15 5 8 12l7 7" />
   </svg>
 );
 
-export const LogoutIcon = (p: SVGProps<SVGSVGElement>) => (
-  <svg {...base(p)}>
-    <path d="M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4M14 8l4 4-4 4M18 12H9" />
+export const ChevronIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base({ strokeWidth: 1.8, ...p })}>
+    <path d="m9 6 6 6-6 6" />
   </svg>
 );
 
@@ -89,14 +93,8 @@ export const SunIcon = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export const CloseIcon = (p: SVGProps<SVGSVGElement>) => (
-  <svg {...base(p)}>
-    <path d="M6 6l12 12M18 6 6 18" />
-  </svg>
-);
-
 export const CheckIcon = (p: SVGProps<SVGSVGElement>) => (
-  <svg {...base(p)}>
+  <svg {...base({ strokeWidth: 1.8, ...p })}>
     <path d="m5 12.5 4.5 4.5L19 7.5" />
   </svg>
 );

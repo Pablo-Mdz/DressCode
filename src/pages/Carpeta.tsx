@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   deleteFolder,
@@ -12,7 +12,11 @@ import {
 import type { Folder, Garment } from "../lib/types";
 import Sheet from "../components/Sheet";
 import ConfirmSheet from "../components/ConfirmSheet";
+import PageHeader from "../components/PageHeader";
+import Silhouette from "../components/Silhouette";
 import { BackIcon, CameraIcon, EditIcon, GalleryIcon, PlusIcon, TrashIcon } from "../components/Icons";
+
+const plural = (n: number) => `${n} ${n === 1 ? "prenda" : "prendas"}`;
 
 export default function Carpeta() {
   const { folderId = "" } = useParams();
@@ -46,7 +50,7 @@ export default function Carpeta() {
     return (
       <section className="page">
         <p className="msg msg-error">Esta carpeta no existe.</p>
-        <Link to="/ropero" className="btn btn-ghost">
+        <Link to="/ropero" className="btn btn-outline">
           Volver al ropero
         </Link>
       </section>
@@ -55,42 +59,30 @@ export default function Carpeta() {
 
   return (
     <section className="page">
-      <div className="folder-bar">
-        <button className="icon-btn" onClick={() => navigate("/ropero")} aria-label="Volver">
-          <BackIcon />
-        </button>
-        <div className="folder-bar-actions">
+      <div className="navbar">
+        <Link to="/ropero" className="back-link">
+          <BackIcon width={22} height={22} /> Ropero
+        </Link>
+        <div className="navbar-actions">
           <button className="icon-btn" onClick={() => setRenaming(true)} aria-label="Renombrar carpeta" disabled={!folder}>
-            <EditIcon />
+            <EditIcon width={21} height={21} />
           </button>
           <button className="icon-btn" onClick={() => setConfirmFolder(true)} aria-label="Eliminar carpeta" disabled={!folder}>
-            <TrashIcon />
+            <TrashIcon width={21} height={21} />
           </button>
         </div>
       </div>
 
-      <header className="page-head reveal">
-        <p className="eyebrow">Carpeta</p>
-        <h1 className="page-title">
-          <em>{folder?.name ?? "…"}</em>
-        </h1>
-        {garments && (
-          <p className="page-sub">
-            {garments.length} {garments.length === 1 ? "prenda" : "prendas"}
-          </p>
-        )}
-      </header>
+      <PageHeader title={folder?.name ?? "…"} subtitle={garments ? plural(garments.length) : undefined} />
 
       {error && <p className="msg msg-error">{error}</p>}
-      {!garments && !error && <div className="loader" />}
+      {!garments && !error && <div className="spinner" />}
 
       {garments && garments.length === 0 && (
-        <div className="empty reveal">
-          <p>Todavía no hay prendas acá.</p>
+        <div className="empty fade-in">
+          <Silhouette kind="camisa" width={64} />
+          <p className="empty-title">Todavía no hay prendas acá</p>
           <p className="muted">Sacale una foto a tu primera prenda.</p>
-          <button className="btn btn-gold" onClick={() => setAdding(true)}>
-            <CameraIcon /> Agregar prenda
-          </button>
         </div>
       )}
 
@@ -99,30 +91,31 @@ export default function Carpeta() {
           {garments.map((g, i) => (
             <button
               key={g.id}
-              className="garment-card reveal"
-              style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
+              className="garment-card fade-in"
+              style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
               onClick={() => setSelected(g)}
             >
-              <div className="frame">
+              <div className="photo">
                 <img src={g.thumb_url} alt={g.description ?? "Prenda"} loading="lazy" />
               </div>
-              {g.description && <p className="garment-desc">{g.description}</p>}
+              {g.description && <span className="garment-desc">{g.description}</span>}
             </button>
           ))}
         </div>
       )}
 
-      {garments && garments.length > 0 && (
-        <button className="fab" onClick={() => setAdding(true)} aria-label="Agregar prenda">
-          <PlusIcon width={28} height={28} />
-        </button>
-      )}
+      <button className="floating-pill" onClick={() => setAdding(true)}>
+        <PlusIcon width={18} height={18} /> Agregar prenda
+      </button>
 
       <AddGarmentSheet
         open={adding}
         folderId={folderId}
+        folders={folders}
         onClose={() => setAdding(false)}
-        onAdded={(g) => setGarments((prev) => [g, ...(prev ?? [])])}
+        onAdded={(g) => {
+          if (g.folder_id === folderId) setGarments((prev) => [g, ...(prev ?? [])]);
+        }}
       />
 
       <RenameSheet
@@ -138,7 +131,8 @@ export default function Carpeta() {
       <ConfirmSheet
         open={confirmFolder}
         title="Eliminar carpeta"
-        message={`Se eliminará "${folder?.name}" y ${garments?.length ? `sus ${garments.length} prendas` : "todo su contenido"}. Esta acción no se puede deshacer.`}
+        message={`Se eliminará "${folder?.name}"${garments?.length ? ` y sus ${plural(garments.length)}` : ""}. Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar carpeta"
         onClose={() => setConfirmFolder(false)}
         onConfirm={async () => {
           await deleteFolder(folderId);
@@ -161,16 +155,59 @@ export default function Carpeta() {
   );
 }
 
+// ───────────────────────── Campos compartidos ─────────────────────────
+
+function GarmentFields({
+  description,
+  setDescription,
+  folderId,
+  setFolderId,
+  folders,
+}: {
+  description: string;
+  setDescription: (v: string) => void;
+  folderId: string;
+  setFolderId: (v: string) => void;
+  folders: Folder[];
+}) {
+  return (
+    <div className="group">
+      <label className="group-field">
+        <span>Descripción</span>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Ej: Lino blanca, corte slim. Ideal verano."
+          maxLength={500}
+          rows={2}
+        />
+      </label>
+      <label className="group-row">
+        <span>Carpeta</span>
+        <select value={folderId} onChange={(e) => setFolderId(e.target.value)}>
+          {folders.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 // ───────────────────────── Subir prenda ─────────────────────────
 
 function AddGarmentSheet({
   open,
   folderId,
+  folders,
   onClose,
   onAdded,
 }: {
   open: boolean;
   folderId: string;
+  folders: Folder[];
   onClose: () => void;
   onAdded: (g: Garment) => void;
 }) {
@@ -179,8 +216,13 @@ function AddGarmentSheet({
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [description, setDescription] = useState("");
+  const [target, setTarget] = useState(folderId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) setTarget(folderId);
+  }, [open, folderId]);
 
   useEffect(() => {
     if (!file) return setPreview(null);
@@ -201,13 +243,12 @@ function AddGarmentSheet({
     onClose();
   };
 
-  async function save(e: FormEvent) {
-    e.preventDefault();
+  async function save() {
     if (!file) return;
     setBusy(true);
     setError(null);
     try {
-      const g = await uploadGarment(file, folderId, description);
+      const g = await uploadGarment(file, target, description);
       onAdded(g);
       reset();
       onClose();
@@ -225,43 +266,36 @@ function AddGarmentSheet({
   };
 
   return (
-    <Sheet open={open} onClose={close} title="Nueva prenda">
+    <Sheet
+      open={open}
+      onClose={close}
+      title="Nueva prenda"
+      action={{ label: busy ? "Guardando…" : "Guardar", onClick: save, disabled: busy || !file }}
+    >
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={onPick} />
       <input ref={galleryRef} type="file" accept="image/*" hidden onChange={onPick} />
 
-      {!file ? (
-        <div className="pick-grid">
-          <button className="pick" onClick={() => cameraRef.current?.click()}>
-            <CameraIcon width={34} height={34} />
-            <span>Cámara</span>
-          </button>
-          <button className="pick" onClick={() => galleryRef.current?.click()}>
-            <GalleryIcon width={34} height={34} />
-            <span>Galería</span>
-          </button>
-        </div>
-      ) : (
-        <form onSubmit={save} className="form">
-          <div className="frame frame-preview">{preview && <img src={preview} alt="Vista previa" />}</div>
-          <button type="button" className="link center" onClick={() => setFile(null)} disabled={busy}>
-            Elegir otra foto
-          </button>
-          <label className="field">
-            <span>Descripción (opcional)</span>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ej: Camisa de lino blanca, corte slim. Ideal verano."
-              maxLength={500}
-              rows={3}
-            />
-          </label>
-          {error && <p className="msg msg-error">{error}</p>}
-          <button className="btn btn-gold btn-block" disabled={busy}>
-            {busy ? "Guardando…" : "Guardar en el ropero"}
-          </button>
-        </form>
-      )}
+      <div className="photo photo-preview">
+        {preview ? <img src={preview} alt="Vista previa" /> : <Silhouette kind="camisa" width={150} strokeWidth={1} />}
+      </div>
+
+      <div className="two-buttons">
+        <button className="btn btn-primary" onClick={() => cameraRef.current?.click()} disabled={busy}>
+          <CameraIcon width={20} height={20} /> Cámara
+        </button>
+        <button className="btn btn-outline" onClick={() => galleryRef.current?.click()} disabled={busy}>
+          <GalleryIcon width={20} height={20} /> Galería
+        </button>
+      </div>
+
+      <GarmentFields
+        description={description}
+        setDescription={setDescription}
+        folderId={target}
+        setFolderId={setTarget}
+        folders={folders}
+      />
+      {error && <p className="msg msg-error">{error}</p>}
     </Sheet>
   );
 }
@@ -306,35 +340,27 @@ function GarmentSheet({
 
   return (
     <>
-      <Sheet open={!confirm} onClose={onClose} title="Prenda">
-        <div className="frame frame-preview">
+      <Sheet
+        open={!confirm}
+        onClose={onClose}
+        title="Prenda"
+        cancelLabel="Cerrar"
+        action={{ label: busy ? "Guardando…" : "Guardar", onClick: save, disabled: busy || !dirty }}
+      >
+        <div className="photo photo-preview">
           <img src={garment.image_url} alt={garment.description ?? "Prenda"} />
         </div>
-        <div className="form">
-          <label className="field">
-            <span>Descripción</span>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} rows={3} />
-          </label>
-          <label className="field">
-            <span>Carpeta</span>
-            <select value={folderId} onChange={(e) => setFolderId(e.target.value)}>
-              {folders.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {error && <p className="msg msg-error">{error}</p>}
-          <div className="row-actions">
-            <button className="btn btn-danger-ghost" onClick={() => setConfirm(true)} disabled={busy}>
-              <TrashIcon /> Eliminar
-            </button>
-            <button className="btn btn-gold" onClick={save} disabled={busy || !dirty}>
-              {busy ? "Guardando…" : "Guardar"}
-            </button>
-          </div>
-        </div>
+        <GarmentFields
+          description={description}
+          setDescription={setDescription}
+          folderId={folderId}
+          setFolderId={setFolderId}
+          folders={folders}
+        />
+        {error && <p className="msg msg-error">{error}</p>}
+        <button className="btn btn-danger-text btn-block" onClick={() => setConfirm(true)} disabled={busy}>
+          Eliminar prenda
+        </button>
       </Sheet>
       <ConfirmSheet
         open={confirm}
@@ -372,8 +398,8 @@ function RenameSheet({
     if (open) setName(current);
   }, [open, current]);
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
+  async function submit() {
+    if (!name.trim()) return;
     setBusy(true);
     setError(null);
     try {
@@ -387,16 +413,24 @@ function RenameSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Renombrar carpeta">
-      <form onSubmit={submit} className="form">
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Renombrar"
+      action={{ label: busy ? "Guardando…" : "Guardar", onClick: submit, disabled: busy || !name.trim() }}
+    >
+      <form
+        className="form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
         <label className="field">
           <span>Nombre</span>
           <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} autoFocus required />
         </label>
         {error && <p className="msg msg-error">{error}</p>}
-        <button className="btn btn-gold btn-block" disabled={busy || !name.trim()}>
-          {busy ? "Guardando…" : "Guardar"}
-        </button>
       </form>
     </Sheet>
   );

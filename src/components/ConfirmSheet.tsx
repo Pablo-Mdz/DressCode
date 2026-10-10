@@ -22,29 +22,24 @@ export default function ConfirmSheet({
     <Sheet open={open} onClose={onClose} title={title}>
       <p className="sheet-text">{message}</p>
       {error && <p className="msg msg-error">{error}</p>}
-      <div className="row-actions">
-        <button className="btn btn-ghost" onClick={onClose} disabled={busy}>
-          Cancelar
-        </button>
-        <button
-          className="btn btn-danger"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            setError(null);
-            try {
-              await onConfirm();
-              onClose();
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Algo salió mal");
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {busy ? "Eliminando…" : confirmLabel}
-        </button>
-      </div>
+      <button
+        className="btn btn-danger btn-block"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          try {
+            await onConfirm();
+            onClose();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Algo salió mal");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? "Eliminando…" : confirmLabel}
+      </button>
     </Sheet>
   );
 }

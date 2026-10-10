@@ -1,26 +1,21 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { chooseOutfit, loadOutfitGarments, requestDayStyle } from "../lib/outfits";
 import { fetchWeather } from "../lib/weather";
 import type { Garment, Outfit, Weather } from "../lib/types";
 import OutfitCard from "../components/OutfitCard";
-import Ornament from "../components/Ornament";
-import { CrownIcon, SunIcon } from "../components/Icons";
+import PageHeader from "../components/PageHeader";
+import { SparkleIcon, SunIcon } from "../components/Icons";
 
 const IDEAS = [
-  "Cena con amigos en un restaurante asiático elegante",
-  "Oficina, reunión importante con clientes",
-  "Domingo de feria y café al aire libre",
-  "Casamiento de día en una quinta",
-  "Primera cita en un bar de vinos",
+  { label: "Cena elegante", prompt: "Cena con amigos en un restaurante elegante" },
+  { label: "Oficina", prompt: "Día de oficina con una reunión importante" },
+  { label: "Casamiento de día", prompt: "Casamiento de día al aire libre" },
+  { label: "Domingo de feria", prompt: "Domingo de feria y café al aire libre" },
+  { label: "Primera cita", prompt: "Primera cita en un bar de vinos" },
 ];
 
-const LOADING_LINES = [
-  "Abriendo tu ropero…",
-  "Mirando colores y texturas…",
-  "Probando combinaciones…",
-  "Ajustando los últimos detalles…",
-];
+const LOADING_LINES = ["Abriendo tu ropero…", "Mirando colores y texturas…", "Probando combinaciones…", "Últimos detalles…"];
 
 const WEATHER_KEY = "dresscode.useWeather";
 
@@ -40,6 +35,7 @@ export default function DayStyle() {
   const [error, setError] = useState<string | null>(null);
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [garments, setGarments] = useState<Record<string, Garment>>({});
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -51,7 +47,7 @@ export default function DayStyle() {
     setWeatherError(null);
     fetchWeather()
       .then(setWeather)
-      .catch(() => setWeatherError("No pude obtener tu ubicación para el clima."));
+      .catch(() => setWeatherError("No pude obtener tu ubicación"));
   }, [useWeather, weather]);
 
   useEffect(() => {
@@ -60,6 +56,10 @@ export default function DayStyle() {
     const t = setInterval(() => setLine((l) => Math.min(l + 1, LOADING_LINES.length - 1)), 4500);
     return () => clearInterval(t);
   }, [busy]);
+
+  useEffect(() => {
+    if (outfit || busy) resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [outfit, busy]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -80,90 +80,113 @@ export default function DayStyle() {
 
   async function choose(index: number) {
     if (!outfit) return;
-    setOutfit({ ...outfit, chosen_index: index });
+    const next = outfit.chosen_index === index ? null : index;
+    setOutfit({ ...outfit, chosen_index: next });
     try {
-      await chooseOutfit(outfit.id, index);
+      await chooseOutfit(outfit.id, next);
     } catch {
-      /* se reintenta desde el historial */
+      /* se puede reintentar desde el historial */
     }
   }
 
-  return (
-    <section className="page page-daystyle">
-      <div className="velvet reveal">
-        <p className="eyebrow eyebrow-light">Atelier del día</p>
-        <h1 className="page-title page-title-light">
-          Day <em>Style</em>
-        </h1>
-        <p className="velvet-sub">¿Qué ocasión te espera hoy?</p>
+  const weatherTitle = weather ? `${Math.round(weather.temperature)}° · ${weather.description}` : "Clima";
+  const weatherSub = !useWeather
+    ? "Desactivado"
+    : weather
+      ? `Mín ${Math.round(weather.min)}° · Máx ${Math.round(weather.max)}° · Considerar el clima`
+      : (weatherError ?? "Buscando el clima…");
 
-        <form onSubmit={submit} className="form">
+  return (
+    <section className="page">
+      <PageHeader
+        eyebrow="Day Style"
+        title={
+          <>
+            ¿Qué te ponés <em>hoy</em>?
+          </>
+        }
+      />
+
+      <form onSubmit={submit} className="form">
+        <label className="prompt-box">
+          <span className="sr-only">Describí la ocasión</span>
           <textarea
-            className="prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ej: Tengo una cena con amigos en un restaurante asiático elegante…"
-            rows={4}
+            placeholder="Contame la ocasión. Ej: cena con amigos en un restaurante asiático elegante."
+            rows={5}
             maxLength={1000}
             disabled={busy}
           />
+        </label>
 
+        <div className="stack-sm">
+          <span className="label">Ideas</span>
           <div className="chips">
             {IDEAS.map((idea) => (
-              <button type="button" key={idea} className="chip" onClick={() => setPrompt(idea)} disabled={busy}>
-                {idea}
+              <button type="button" key={idea.label} className="chip" onClick={() => setPrompt(idea.prompt)} disabled={busy}>
+                {idea.label}
               </button>
             ))}
           </div>
+        </div>
 
-          <label className="weather-toggle">
-            <input type="checkbox" checked={useWeather} onChange={(e) => setUseWeather(e.target.checked)} />
-            <span className="switch" aria-hidden />
-            <SunIcon width={18} height={18} />
-            <span className="weather-text">
-              {!useWeather
-                ? "Tener en cuenta el clima"
-                : weather
-                  ? `${weather.description} · ${Math.round(weather.temperature)}°C (${Math.round(weather.min)}° / ${Math.round(weather.max)}°)`
-                  : weatherError ?? "Buscando el clima…"}
-            </span>
-          </label>
-
-          <button className="btn btn-gold btn-block btn-lg" disabled={busy || prompt.trim().length < 3}>
-            <CrownIcon /> {busy ? "Vistiéndote…" : "Armar mi look"}
+        <div className="weather-row">
+          <SunIcon />
+          <div className="weather-text">
+            <span>{useWeather ? weatherTitle : "Clima"}</span>
+            <span className="muted">{weatherSub}</span>
+          </div>
+          <button
+            type="button"
+            className={`switch ${useWeather ? "on" : ""}`}
+            aria-pressed={useWeather}
+            aria-label="Considerar el clima"
+            onClick={() => setUseWeather(!useWeather)}
+          >
+            <span />
           </button>
-        </form>
-      </div>
+        </div>
+
+        <button className="btn btn-primary btn-block btn-lg" disabled={busy || prompt.trim().length < 3}>
+          <SparkleIcon width={20} height={20} /> {busy ? "Creando tu look…" : "Crear mi look"}
+        </button>
+      </form>
+
+      <div ref={resultsRef} className="results-anchor" />
 
       {busy && (
-        <div className="atelier-loading reveal">
-          <div className="spool" aria-hidden>
-            <CrownIcon width={40} height={40} />
-          </div>
-          <p key={line} className="loading-line">
+        <div className="thinking fade-in">
+          <div className="spinner" />
+          <p key={line} className="fade-in">
             {LOADING_LINES[line]}
           </p>
         </div>
       )}
 
       {error && (
-        <div className="msg msg-error">
+        <p className="msg msg-error">
           {error}
           {error.includes("Ropero") && (
             <>
               {" "}
-              <Link to="/ropero">Ir al Ropero →</Link>
+              <Link to="/ropero">Ir al Ropero</Link>
             </>
           )}
-        </div>
+        </p>
       )}
 
       {outfit && (
         <div className="looks">
-          <Ornament />
-          <p className="looks-intro">
-            Para <em>“{outfit.prompt}”</em>
-          </p>
+          <header className="looks-head">
+            <span className="eyebrow">Tus looks para</span>
+            <p className="looks-prompt">“{outfit.prompt}”</p>
+            {outfit.weather && (
+              <span className="muted">
+                {Math.round(outfit.weather.temperature)}° · {outfit.weather.description}
+              </span>
+            )}
+          </header>
           {outfit.suggestions.map((s, i) => (
             <OutfitCard
               key={i}
@@ -172,7 +195,7 @@ export default function DayStyle() {
               garments={garments}
               chosen={outfit.chosen_index === i}
               onChoose={() => choose(i)}
-              delay={i * 150}
+              delay={i * 120}
             />
           ))}
         </div>
