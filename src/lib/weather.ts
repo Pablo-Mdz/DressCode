@@ -1,7 +1,8 @@
 import type { Weather } from "./types";
+import type { Lang } from "./i18n";
 
 // Open-Meteo: gratis y sin API key.
-const CODES: Record<number, string> = {
+const CODES_ES: Record<number, string> = {
   0: "Despejado",
   1: "Mayormente despejado",
   2: "Parcialmente nublado",
@@ -32,9 +33,40 @@ const CODES: Record<number, string> = {
   99: "Tormenta fuerte con granizo",
 };
 
+const CODES_EN: Record<number, string> = {
+  0: "Clear",
+  1: "Mostly clear",
+  2: "Partly cloudy",
+  3: "Cloudy",
+  45: "Fog",
+  48: "Freezing fog",
+  51: "Light drizzle",
+  53: "Drizzle",
+  55: "Heavy drizzle",
+  56: "Freezing drizzle",
+  57: "Heavy freezing drizzle",
+  61: "Light rain",
+  63: "Rain",
+  65: "Heavy rain",
+  66: "Freezing rain",
+  67: "Heavy freezing rain",
+  71: "Light snow",
+  73: "Snow",
+  75: "Heavy snow",
+  77: "Snow grains",
+  80: "Light showers",
+  81: "Showers",
+  82: "Heavy showers",
+  85: "Snow showers",
+  86: "Heavy snow showers",
+  95: "Thunderstorm",
+  96: "Thunderstorm with hail",
+  99: "Severe thunderstorm with hail",
+};
+
 function getPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
-    if (!("geolocation" in navigator)) return reject(new Error("Tu navegador no permite ubicación"));
+    if (!("geolocation" in navigator)) return reject(new Error("geolocation unavailable"));
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: false,
       timeout: 10000,
@@ -43,7 +75,7 @@ function getPosition(): Promise<GeolocationPosition> {
   });
 }
 
-export async function fetchWeather(): Promise<Weather> {
+export async function fetchWeather(lang: Lang = "es"): Promise<Weather> {
   const pos = await getPosition();
   const params = new URLSearchParams({
     latitude: pos.coords.latitude.toFixed(3),
@@ -54,10 +86,10 @@ export async function fetchWeather(): Promise<Weather> {
     forecast_days: "1",
   });
   const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
-  if (!res.ok) throw new Error("No pude obtener el clima");
+  if (!res.ok) throw new Error("weather unavailable");
   const d = await res.json();
   return {
-    description: CODES[d.current.weather_code] ?? "Clima variable",
+    description: (lang === "en" ? CODES_EN : CODES_ES)[d.current.weather_code] ?? (lang === "en" ? "Changeable" : "Clima variable"),
     temperature: d.current.temperature_2m,
     min: d.daily.temperature_2m_min[0],
     max: d.daily.temperature_2m_max[0],

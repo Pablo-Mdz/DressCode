@@ -4,15 +4,15 @@ import { createFolder, listFolders, listGarments } from "../lib/wardrobe";
 import type { Folder, Garment } from "../lib/types";
 import { useAuth } from "../context/AuthContext";
 import { firstName } from "../lib/user";
+import { useI18n } from "../lib/i18n";
 import PageHeader from "../components/PageHeader";
 import Sheet from "../components/Sheet";
 import AccountSheet from "../components/AccountSheet";
 import { HangerIcon, PlusIcon } from "../components/Icons";
 
-const plural = (n: number) => `${n} ${n === 1 ? "prenda" : "prendas"}`;
-
 export default function Ropero() {
   const { user } = useAuth();
+  const { t, plural } = useI18n();
   const [folders, setFolders] = useState<Folder[] | null>(null);
   const [garments, setGarments] = useState<Garment[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export default function Ropero() {
         setFolders(f);
         setGarments(g);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "No pude cargar tu ropero"));
+      .catch((e) => setError(e instanceof Error ? e.message : t("wardrobe.loadError")));
   }, []);
 
   async function addFolder(e?: FormEvent) {
@@ -41,7 +41,7 @@ export default function Ropero() {
       setNewName("");
       setCreating(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No pude crear la carpeta");
+      setError(err instanceof Error ? err.message : t("wardrobe.createError"));
     } finally {
       setBusy(false);
     }
@@ -50,11 +50,11 @@ export default function Ropero() {
   return (
     <section className="page">
       <PageHeader
-        eyebrow={`Bonjour, ${firstName(user)}`}
-        title="Ropero"
-        subtitle={`${plural(garments.length)} · ${folders?.length ?? 0} carpetas`}
+        eyebrow={t("wardrobe.hello", { name: firstName(user) })}
+        title={t("wardrobe.title")}
+        subtitle={`${plural("garments", garments.length)} · ${plural("folders", folders?.length ?? 0)}`}
         aside={
-          <button className="avatar" onClick={() => setAccount(true)} aria-label="Cuenta">
+          <button className="avatar" onClick={() => setAccount(true)} aria-label={t("account.title")}>
             {firstName(user).charAt(0).toUpperCase() || "·"}
           </button>
         }
@@ -77,13 +77,13 @@ export default function Ropero() {
               >
                 {cover ? <img src={cover} alt="" /> : <HangerIcon className="folder-icon" width={30} height={30} />}
                 <span className="folder-name">{f.name}</span>
-                <span className="folder-count">{items.length ? plural(items.length) : "Vacía"}</span>
+                <span className="folder-count">{items.length ? plural("garments", items.length) : t("wardrobe.empty")}</span>
               </Link>
             );
           })}
           <button className="folder-card folder-new fade-in" onClick={() => setCreating(true)}>
             <PlusIcon />
-            Nueva carpeta
+            {t("wardrobe.newFolder")}
           </button>
         </div>
       )}
@@ -91,16 +91,16 @@ export default function Ropero() {
       <Sheet
         open={creating}
         onClose={() => setCreating(false)}
-        title="Nueva carpeta"
-        action={{ label: busy ? "Creando…" : "Crear", onClick: () => addFolder(), disabled: busy || !newName.trim() }}
+        title={t("wardrobe.newFolder")}
+        action={{ label: busy ? t("common.creating") : t("common.create"), onClick: () => addFolder(), disabled: busy || !newName.trim() }}
       >
         <form onSubmit={addFolder} className="form">
           <label className="field">
-            <span>Nombre</span>
+            <span>{t("common.name")}</span>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Ej: Vestidos, Trajes, Deportivo…"
+              placeholder={t("wardrobe.folderPlaceholder")}
               maxLength={40}
               autoFocus
               required

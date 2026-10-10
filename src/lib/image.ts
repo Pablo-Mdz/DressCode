@@ -1,4 +1,6 @@
 // Redimensiona y comprime en el teléfono antes de subir:
+import { translate } from "./i18n";
+
 // fotos más livianas = subidas rápidas, menos espacio en Supabase y menos costo de IA.
 
 async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
@@ -29,7 +31,7 @@ function toJpeg(source: ImageBitmap | HTMLImageElement, maxSide: number, quality
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
   return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("No se pudo procesar la imagen"))), "image/jpeg", quality),
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(translate("garment.imageError")))), "image/jpeg", quality),
   );
 }
 

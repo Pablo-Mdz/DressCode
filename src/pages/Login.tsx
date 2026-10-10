@@ -11,27 +11,25 @@ import {
 import { auth } from "../lib/firebase";
 import Wordmark from "../components/Wordmark";
 import { GoogleIcon } from "../components/Icons";
+import { LanguageSwitch } from "../components/AccountSheet";
+import { useI18n, type MessageKey } from "../lib/i18n";
 
 type Mode = "login" | "signup" | "reset";
 
-const ERRORS: Record<string, string> = {
-  "auth/invalid-credential": "Email o contraseña incorrectos.",
-  "auth/wrong-password": "Email o contraseña incorrectos.",
-  "auth/user-not-found": "Email o contraseña incorrectos.",
-  "auth/email-already-in-use": "Ya existe una cuenta con ese email.",
-  "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
-  "auth/invalid-email": "El email no es válido.",
-  "auth/too-many-requests": "Demasiados intentos. Esperá unos minutos.",
-  "auth/network-request-failed": "Sin conexión. Revisá tu internet.",
-  "auth/unauthorized-domain": "Este dominio no está autorizado en Firebase (Authentication → Configuración).",
-};
-
-const errorMessage = (err: unknown) => {
-  const code = (err as { code?: string }).code ?? "";
-  return ERRORS[code] ?? (err instanceof Error ? err.message : String(err));
+const KNOWN_ERRORS: Record<string, MessageKey> = {
+  "auth/invalid-credential": "auth/invalid-credential",
+  "auth/wrong-password": "auth/invalid-credential",
+  "auth/user-not-found": "auth/invalid-credential",
+  "auth/email-already-in-use": "auth/email-already-in-use",
+  "auth/weak-password": "auth/weak-password",
+  "auth/invalid-email": "auth/invalid-email",
+  "auth/too-many-requests": "auth/too-many-requests",
+  "auth/network-request-failed": "auth/network-request-failed",
+  "auth/unauthorized-domain": "auth/unauthorized-domain",
 };
 
 export default function Login() {
+  const { t, lang, setLang } = useI18n();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,6 +37,11 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  const errorMessage = (err: unknown) => {
+    const key = KNOWN_ERRORS[(err as { code?: string }).code ?? ""];
+    return key ? t(key) : err instanceof Error ? err.message : String(err);
+  };
 
   const switchMode = (m: Mode) => {
     setMode(m);
@@ -58,8 +61,9 @@ export default function Login() {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(cred.user, { displayName: name.trim() });
       } else {
+        auth.languageCode = lang;
         await sendPasswordResetEmail(auth, email);
-        setInfo("Si el email existe, te llegará un enlace para crear una nueva contraseña.");
+        setInfo(t("login.resetSent"));
       }
     } catch (err) {
       setError(errorMessage(err));
@@ -70,6 +74,7 @@ export default function Login() {
 
   async function google() {
     setError(null);
+    auth.languageCode = lang;
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -82,36 +87,40 @@ export default function Login() {
 
   return (
     <div className="login">
+      <div className="login-lang">
+        <LanguageSwitch lang={lang} setLang={setLang} label={t("login.language")} compact />
+      </div>
+
       <div className="login-crest">
         <Wordmark />
         <span className="crest-line" aria-hidden />
-        <p className="tagline">Tu ropero, con criterio</p>
+        <p className="tagline">{t("login.tagline")}</p>
       </div>
 
       <form onSubmit={submit} className="form login-form">
         {mode !== "login" && (
-          <h1 className="login-title">{mode === "signup" ? "Crear cuenta" : "Recuperar acceso"}</h1>
+          <h1 className="login-title">{mode === "signup" ? t("login.signupTitle") : t("login.resetTitle")}</h1>
         )}
         {mode === "signup" && (
           <label className="field">
-            <span>Nombre</span>
+            <span>{t("common.name")}</span>
             <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" required />
           </label>
         )}
         <label className="field">
-          <span>Email</span>
+          <span>{t("common.email")}</span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="nombre@email.com"
+            placeholder={t("login.emailPlaceholder")}
             autoComplete="email"
             required
           />
         </label>
         {mode !== "reset" && (
           <label className="field">
-            <span>Contraseña</span>
+            <span>{t("login.password")}</span>
             <input
               type="password"
               value={password}
@@ -127,17 +136,23 @@ export default function Login() {
         {info && <p className="msg msg-info">{info}</p>}
 
         <button className="btn btn-primary btn-block" disabled={busy}>
-          {busy ? "Un momento…" : mode === "login" ? "Entrar" : mode === "signup" ? "Crear cuenta" : "Enviar enlace"}
+          {busy
+            ? t("login.wait")
+            : mode === "login"
+              ? t("login.submitLogin")
+              : mode === "signup"
+                ? t("login.submitSignup")
+                : t("login.submitReset")}
         </button>
       </form>
 
       {mode !== "reset" && (
         <>
           <div className="or">
-            <span>o</span>
+            <span>{t("login.or")}</span>
           </div>
           <button className="btn btn-outline btn-block" onClick={google} type="button">
-            <GoogleIcon /> Continuar con Google
+            <GoogleIcon /> {t("login.google")}
           </button>
         </>
       )}
@@ -146,15 +161,15 @@ export default function Login() {
         {mode === "login" ? (
           <>
             <button className="link" onClick={() => switchMode("signup")}>
-              ¿No tenés cuenta? <strong>Registrate</strong>
+              {t("login.noAccount")} <strong>{t("login.signup")}</strong>
             </button>
             <button className="link" onClick={() => switchMode("reset")}>
-              Olvidé mi contraseña
+              {t("login.forgot")}
             </button>
           </>
         ) : (
           <button className="link" onClick={() => switchMode("login")}>
-            Ya tengo cuenta · <strong>Entrar</strong>
+            {t("login.haveAccount")} · <strong>{t("login.signin")}</strong>
           </button>
         )}
       </div>

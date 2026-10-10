@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { useI18n } from "../lib/i18n";
 
 // Panel inferior al estilo iOS: "Cancelar" a la izquierda, título y acción opcional a la derecha.
 export default function Sheet({
@@ -6,7 +7,7 @@ export default function Sheet({
   onClose,
   title,
   action,
-  cancelLabel = "Cancelar",
+  cancelLabel,
   children,
 }: {
   open: boolean;
@@ -16,6 +17,7 @@ export default function Sheet({
   cancelLabel?: string;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -34,7 +36,7 @@ export default function Sheet({
         <div className="sheet-grabber" aria-hidden />
         <div className="sheet-head">
           <button className="text-btn" onClick={onClose}>
-            {cancelLabel}
+            {cancelLabel ?? t("common.cancel")}
           </button>
           <h2 className="sheet-title">{title}</h2>
           {action ? (

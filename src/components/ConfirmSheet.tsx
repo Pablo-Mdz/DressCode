@@ -1,11 +1,12 @@
 import { useState } from "react";
 import Sheet from "./Sheet";
+import { useI18n } from "../lib/i18n";
 
 export default function ConfirmSheet({
   open,
   title,
   message,
-  confirmLabel = "Eliminar",
+  confirmLabel,
   onConfirm,
   onClose,
 }: {
@@ -16,6 +17,7 @@ export default function ConfirmSheet({
   onConfirm: () => Promise<void> | void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -32,13 +34,13 @@ export default function ConfirmSheet({
             await onConfirm();
             onClose();
           } catch (err) {
-            setError(err instanceof Error ? err.message : "Algo salió mal");
+            setError(err instanceof Error ? err.message : t("common.genericError"));
           } finally {
             setBusy(false);
           }
         }}
       >
-        {busy ? "Eliminando…" : confirmLabel}
+        {busy ? t("common.deleting") : (confirmLabel ?? t("common.delete"))}
       </button>
     </Sheet>
   );

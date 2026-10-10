@@ -14,13 +14,13 @@ import Sheet from "../components/Sheet";
 import ConfirmSheet from "../components/ConfirmSheet";
 import PageHeader from "../components/PageHeader";
 import Silhouette from "../components/Silhouette";
+import { useI18n } from "../lib/i18n";
 import { BackIcon, CameraIcon, EditIcon, GalleryIcon, PlusIcon, TrashIcon } from "../components/Icons";
-
-const plural = (n: number) => `${n} ${n === 1 ? "prenda" : "prendas"}`;
 
 export default function Carpeta() {
   const { folderId = "" } = useParams();
   const navigate = useNavigate();
+  const { t, plural } = useI18n();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [garments, setGarments] = useState<Garment[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export default function Carpeta() {
       setFolders(f);
       setGarments(g);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pude cargar la carpeta");
+      setError(e instanceof Error ? e.message : t("folder.loadError"));
     }
   }, [folderId]);
 
@@ -49,9 +49,9 @@ export default function Carpeta() {
   if (garments && folders.length && !folder) {
     return (
       <section className="page">
-        <p className="msg msg-error">Esta carpeta no existe.</p>
+        <p className="msg msg-error">{t("folder.notFound")}</p>
         <Link to="/ropero" className="btn btn-outline">
-          Volver al ropero
+          {t("folder.back")}
         </Link>
       </section>
     );
@@ -61,19 +61,19 @@ export default function Carpeta() {
     <section className="page">
       <div className="navbar">
         <Link to="/ropero" className="back-link">
-          <BackIcon width={22} height={22} /> Ropero
+          <BackIcon width={22} height={22} /> {t("tab.wardrobe")}
         </Link>
         <div className="navbar-actions">
-          <button className="icon-btn" onClick={() => setRenaming(true)} aria-label="Renombrar carpeta" disabled={!folder}>
+          <button className="icon-btn" onClick={() => setRenaming(true)} aria-label={t("folder.rename")} disabled={!folder}>
             <EditIcon width={21} height={21} />
           </button>
-          <button className="icon-btn" onClick={() => setConfirmFolder(true)} aria-label="Eliminar carpeta" disabled={!folder}>
+          <button className="icon-btn" onClick={() => setConfirmFolder(true)} aria-label={t("folder.delete")} disabled={!folder}>
             <TrashIcon width={21} height={21} />
           </button>
         </div>
       </div>
 
-      <PageHeader title={folder?.name ?? "…"} subtitle={garments ? plural(garments.length) : undefined} />
+      <PageHeader title={folder?.name ?? "…"} subtitle={garments ? plural("garments", garments.length) : undefined} />
 
       {error && <p className="msg msg-error">{error}</p>}
       {!garments && !error && <div className="spinner" />}
@@ -81,8 +81,8 @@ export default function Carpeta() {
       {garments && garments.length === 0 && (
         <div className="empty fade-in">
           <Silhouette kind="camisa" width={64} />
-          <p className="empty-title">Todavía no hay prendas acá</p>
-          <p className="muted">Sacale una foto a tu primera prenda.</p>
+          <p className="empty-title">{t("folder.emptyTitle")}</p>
+          <p className="muted">{t("folder.emptyText")}</p>
         </div>
       )}
 
@@ -96,7 +96,7 @@ export default function Carpeta() {
               onClick={() => setSelected(g)}
             >
               <div className="photo">
-                <img src={g.thumb_url} alt={g.description ?? "Prenda"} loading="lazy" />
+                <img src={g.thumb_url} alt={g.description ?? t("garment.alt")} loading="lazy" />
               </div>
               {g.description && <span className="garment-desc">{g.description}</span>}
             </button>
@@ -105,7 +105,7 @@ export default function Carpeta() {
       )}
 
       <button className="floating-pill" onClick={() => setAdding(true)}>
-        <PlusIcon width={18} height={18} /> Agregar prenda
+        <PlusIcon width={18} height={18} /> {t("folder.add")}
       </button>
 
       <AddGarmentSheet
@@ -130,9 +130,12 @@ export default function Carpeta() {
 
       <ConfirmSheet
         open={confirmFolder}
-        title="Eliminar carpeta"
-        message={`Se eliminará "${folder?.name}"${garments?.length ? ` y sus ${plural(garments.length)}` : ""}. Esta acción no se puede deshacer.`}
-        confirmLabel="Eliminar carpeta"
+        title={t("folder.delete")}
+        message={t("folder.deleteMessage", {
+          name: folder?.name ?? "",
+          extra: garments?.length ? t("folder.deleteExtra", { items: plural("garments", garments.length) }) : "",
+        })}
+        confirmLabel={t("folder.delete")}
         onClose={() => setConfirmFolder(false)}
         onConfirm={async () => {
           await deleteFolder(folderId);
@@ -170,20 +173,21 @@ function GarmentFields({
   setFolderId: (v: string) => void;
   folders: Folder[];
 }) {
+  const { t } = useI18n();
   return (
     <div className="group">
       <label className="group-field">
-        <span>Descripción</span>
+        <span>{t("garment.description")}</span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Ej: Lino blanca, corte slim. Ideal verano."
+          placeholder={t("garment.descriptionPlaceholder")}
           maxLength={500}
           rows={2}
         />
       </label>
       <label className="group-row">
-        <span>Carpeta</span>
+        <span>{t("garment.folder")}</span>
         <select value={folderId} onChange={(e) => setFolderId(e.target.value)}>
           {folders.map((f) => (
             <option key={f.id} value={f.id}>
@@ -211,6 +215,7 @@ function AddGarmentSheet({
   onClose: () => void;
   onAdded: (g: Garment) => void;
 }) {
+  const { t } = useI18n();
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -253,7 +258,7 @@ function AddGarmentSheet({
       reset();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No pude subir la foto");
+      setError(err instanceof Error ? err.message : t("garment.uploadError"));
     } finally {
       setBusy(false);
     }
@@ -269,22 +274,22 @@ function AddGarmentSheet({
     <Sheet
       open={open}
       onClose={close}
-      title="Nueva prenda"
-      action={{ label: busy ? "Guardando…" : "Guardar", onClick: save, disabled: busy || !file }}
+      title={t("garment.new")}
+      action={{ label: busy ? t("common.saving") : t("common.save"), onClick: save, disabled: busy || !file }}
     >
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={onPick} />
       <input ref={galleryRef} type="file" accept="image/*" hidden onChange={onPick} />
 
       <div className="photo photo-preview">
-        {preview ? <img src={preview} alt="Vista previa" /> : <Silhouette kind="camisa" width={150} strokeWidth={1} />}
+        {preview ? <img src={preview} alt={t("garment.preview")} /> : <Silhouette kind="camisa" width={150} strokeWidth={1} />}
       </div>
 
       <div className="two-buttons">
         <button className="btn btn-primary" onClick={() => cameraRef.current?.click()} disabled={busy}>
-          <CameraIcon width={20} height={20} /> Cámara
+          <CameraIcon width={20} height={20} /> {t("garment.camera")}
         </button>
         <button className="btn btn-outline" onClick={() => galleryRef.current?.click()} disabled={busy}>
-          <GalleryIcon width={20} height={20} /> Galería
+          <GalleryIcon width={20} height={20} /> {t("garment.gallery")}
         </button>
       </div>
 
@@ -315,6 +320,7 @@ function GarmentSheet({
   onChanged: (g: Garment, moved: boolean) => void;
   onDeleted: (g: Garment) => void;
 }) {
+  const { t } = useI18n();
   const [description, setDescription] = useState(garment.description ?? "");
   const [folderId, setFolderId] = useState(garment.folder_id);
   const [busy, setBusy] = useState(false);
@@ -332,7 +338,7 @@ function GarmentSheet({
       onChanged({ ...garment, ...patch }, folderId !== garment.folder_id);
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pude guardar los cambios");
+      setError(e instanceof Error ? e.message : t("garment.saveError"));
     } finally {
       setBusy(false);
     }
@@ -343,12 +349,12 @@ function GarmentSheet({
       <Sheet
         open={!confirm}
         onClose={onClose}
-        title="Prenda"
-        cancelLabel="Cerrar"
-        action={{ label: busy ? "Guardando…" : "Guardar", onClick: save, disabled: busy || !dirty }}
+        title={t("garment.title")}
+        cancelLabel={t("common.close")}
+        action={{ label: busy ? t("common.saving") : t("common.save"), onClick: save, disabled: busy || !dirty }}
       >
         <div className="photo photo-preview">
-          <img src={garment.image_url} alt={garment.description ?? "Prenda"} />
+          <img src={garment.image_url} alt={garment.description ?? t("garment.alt")} />
         </div>
         <GarmentFields
           description={description}
@@ -359,13 +365,13 @@ function GarmentSheet({
         />
         {error && <p className="msg msg-error">{error}</p>}
         <button className="btn btn-danger-text btn-block" onClick={() => setConfirm(true)} disabled={busy}>
-          Eliminar prenda
+          {t("garment.delete")}
         </button>
       </Sheet>
       <ConfirmSheet
         open={confirm}
-        title="Eliminar prenda"
-        message="La foto se borrará de tu ropero. Esta acción no se puede deshacer."
+        title={t("garment.delete")}
+        message={t("garment.deleteMessage")}
         onClose={() => setConfirm(false)}
         onConfirm={async () => {
           await deleteGarment(garment);
@@ -390,6 +396,7 @@ function RenameSheet({
   onClose: () => void;
   onSave: (name: string) => Promise<void>;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState(current);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -406,7 +413,7 @@ function RenameSheet({
       await onSave(name.trim());
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No pude renombrar");
+      setError(err instanceof Error ? err.message : t("folder.renameError"));
     } finally {
       setBusy(false);
     }
@@ -416,8 +423,8 @@ function RenameSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title="Renombrar"
-      action={{ label: busy ? "Guardando…" : "Guardar", onClick: submit, disabled: busy || !name.trim() }}
+      title={t("folder.renameTitle")}
+      action={{ label: busy ? t("common.saving") : t("common.save"), onClick: submit, disabled: busy || !name.trim() }}
     >
       <form
         className="form"
@@ -427,7 +434,7 @@ function RenameSheet({
         }}
       >
         <label className="field">
-          <span>Nombre</span>
+          <span>{t("common.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} autoFocus required />
         </label>
         {error && <p className="msg msg-error">{error}</p>}
