@@ -17,7 +17,8 @@ import type { Garment, ListItem, ShoppingItem, ShoppingPrefs, ShoppingResult } f
 import PageHeader from "../components/PageHeader";
 import Sheet from "../components/Sheet";
 import Silhouette, { strokeFor } from "../components/Silhouette";
-import { BagIcon, CheckIcon, SparkleIcon } from "../components/Icons";
+import { BagIcon, CameraIcon, CheckIcon, ChevronIcon, SparkleIcon } from "../components/Icons";
+import BuySheet from "../components/BuySheet";
 import { useI18n, type MessageKey } from "../lib/i18n";
 
 type Filter = "Todo" | "Esencial" | "Para variar";
@@ -36,6 +37,7 @@ export default function Shopping() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("Todo");
   const [listOpen, setListOpen] = useState(false);
+  const [buyOpen, setBuyOpen] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -130,6 +132,17 @@ export default function Shopping() {
           </button>
         }
       />
+
+      <button className="entry-card" onClick={() => setBuyOpen(true)} disabled={!loaded}>
+        <span className="entry-icon">
+          <CameraIcon width={22} height={22} />
+        </span>
+        <span className="entry-text">
+          <span className="serif-md">{t("buy.title")}</span>
+          <span className="muted">{t("buy.entry")}</span>
+        </span>
+        <ChevronIcon width={18} height={18} className="chevron" />
+      </button>
 
       <section className="card-outline stack" aria-label={t("shop.guide")}>
         <div className="stack-xs">
@@ -299,6 +312,20 @@ export default function Shopping() {
           <p className="muted">{t("shop.emptyText")}</p>
         </div>
       )}
+
+      <BuySheet
+        open={buyOpen}
+        onClose={() => setBuyOpen(false)}
+        garments={garments}
+        onAddToList={async (item) => {
+          try {
+            const entry = await addToList(item);
+            setList((prev) => [entry, ...prev]);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : t("shop.listError"));
+          }
+        }}
+      />
 
       <Sheet open={listOpen} onClose={() => setListOpen(false)} title={t("shop.listTitle")} cancelLabel={t("common.close")}>
         {list.length === 0 ? (

@@ -1354,6 +1354,217 @@ textarea::placeholder {
   flex: 1;
 }
 
+/* ───────────── Etiquetas IA ───────────── */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: -6px;
+}
+
+.chips-scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin: 0 -22px;
+  padding: 0 22px 2px;
+  scrollbar-width: none;
+}
+
+.chips-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.chip-sm {
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.photo-badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 4px 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+  color: var(--ink-2);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.tag-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 15px;
+  background: var(--field);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--accent-soft);
+}
+
+.banner-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.banner-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.btn-sm {
+  flex: none;
+  height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+/* ───────────── ¿Lo compro? ───────────── */
+
+.entry-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border-radius: 22px;
+  background: var(--tile);
+  text-align: left;
+  transition: transform 0.2s var(--ease);
+}
+
+.entry-card:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.entry-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.entry-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.photo-small {
+  height: 180px;
+}
+
+.verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.verdict-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.verdict-badge {
+  padding: 6px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.verdict-buy {
+  background: var(--ink);
+  color: #fff;
+}
+
+.verdict-maybe {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.verdict-skip {
+  background: #fbeceb;
+  color: #8f1d18;
+}
+
+.verdict-head .gain {
+  margin-top: 0;
+}
+
+.verdict-title {
+  margin: 0;
+  font-family: var(--f-serif);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.08;
+}
+
+.pair-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pair-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pair-row img {
+  flex: none;
+  width: 52px;
+  height: 60px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--tile);
+}
+
+.pair-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.pair-name {
+  font-weight: 500;
+}
+
 /* ───────────── Spinner y animaciones ───────────── */
 
 .spinner {
@@ -1390,6 +1601,12 @@ textarea::placeholder {
 @keyframes slideUp {
   from {
     transform: translateY(100%);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
   }
 }
 

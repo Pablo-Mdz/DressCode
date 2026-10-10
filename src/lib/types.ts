@@ -5,6 +5,17 @@ export type Folder = {
   created_at: number;
 };
 
+export type Season = "summer" | "winter" | "mid" | "all";
+export type Formality = "casual" | "smart" | "formal" | "sport";
+
+export type GarmentTags = {
+  kind: GarmentKind;
+  color_name: string;
+  color_hex: string;
+  season: Season;
+  formality: Formality;
+};
+
 export type Garment = {
   id: string;
   folder_id: string;
@@ -13,6 +24,7 @@ export type Garment = {
   image_url: string;
   thumb_url: string;
   description: string | null;
+  tags?: GarmentTags;
   created_at: number;
 };
 
@@ -84,4 +96,15 @@ export type ListItem = Omit<ShoppingItem, "id" | "pair_ids" | "new_looks"> & {
   id: string;
   suggestion_id: string;
   created_at: number;
+};
+
+export type BuyResult = {
+  verdict: "buy" | "maybe" | "skip";
+  headline: string;
+  reasoning: string;
+  item: { name: string; kind: GarmentKind; color_name: string; color_hex: string; material: string };
+  pairs: { garment_id: string; note: string }[];
+  similar_ids: string[];
+  new_looks: number;
+  tip: string;
 };

@@ -9,18 +9,20 @@ import {
   updateGarment,
   uploadGarment,
 } from "../lib/wardrobe";
-import type { Folder, Garment } from "../lib/types";
+import type { Folder, Formality, Garment, GarmentTags, Season } from "../lib/types";
+import { tagGarment } from "../lib/ai";
 import Sheet from "../components/Sheet";
 import ConfirmSheet from "../components/ConfirmSheet";
 import PageHeader from "../components/PageHeader";
 import Silhouette from "../components/Silhouette";
-import { useI18n } from "../lib/i18n";
-import { BackIcon, CameraIcon, EditIcon, GalleryIcon, PlusIcon, TrashIcon } from "../components/Icons";
+import { useI18n, type MessageKey } from "../lib/i18n";
+import TagPills from "../components/TagPills";
+import { BackIcon, CameraIcon, EditIcon, GalleryIcon, PlusIcon, SparkleIcon, TrashIcon } from "../components/Icons";
 
 export default function Carpeta() {
   const { folderId = "" } = useParams();
   const navigate = useNavigate();
-  const { t, plural } = useI18n();
+  const { t, plural, lang } = useI18n();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [garments, setGarments] = useState<Garment[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +31,30 @@ export default function Carpeta() {
   const [renaming, setRenaming] = useState(false);
   const [confirmFolder, setConfirmFolder] = useState(false);
   const [selected, setSelected] = useState<Garment | null>(null);
+  const [tagging, setTagging] = useState<Set<string>>(new Set());
+  const [season, setSeason] = useState<Season | null>(null);
+  const [formality, setFormality] = useState<Formality | null>(null);
+
+  // Etiqueta una prenda con IA en segundo plano y actualiza la grilla al terminar.
+  const autoTag = useCallback(
+    async (g: Garment) => {
+      setTagging((prev) => new Set(prev).add(g.id));
+      try {
+        const { tags, description } = await tagGarment(g.id, lang);
+        setGarments((prev) => prev?.map((x) => (x.id === g.id ? { ...x, tags, description } : x)) ?? prev);
+        setSelected((prev) => (prev?.id === g.id ? { ...prev, tags, description } : prev));
+      } catch {
+        /* sin etiquetas: se puede reintentar desde el detalle de la prenda */
+      } finally {
+        setTagging((prev) => {
+          const next = new Set(prev);
+          next.delete(g.id);
+          return next;
+        });
+      }
+    },
+    [lang],
+  );
 
   const folder = folders.find((f) => f.id === folderId);
 
@@ -86,9 +112,28 @@ export default function Carpeta() {
         </div>
       )}
 
+      {garments && garments.some((g) => g.tags) && (
+        <div className="filters">
+          <FilterRow
+            options={["summer", "winter", "mid"] as Season[]}
+            value={season}
+            onChange={setSeason}
+            label={(s) => t(`season.${s}` as MessageKey)}
+            allLabel={t("filter.all")}
+          />
+          <FilterRow
+            options={["casual", "smart", "formal", "sport"] as Formality[]}
+            value={formality}
+            onChange={setFormality}
+            label={(f) => t(`formality.${f}` as MessageKey)}
+            allLabel={t("filter.all")}
+          />
+        </div>
+      )}
+
       {garments && garments.length > 0 && (
         <div className="garment-grid">
-          {garments.map((g, i) => (
+          {garments.filter((g) => matches(g.tags, season, formality)).map((g, i) => (
             <button
               key={g.id}
               className="garment-card fade-in"
@@ -97,6 +142,7 @@ export default function Carpeta() {
             >
               <div className="photo">
                 <img src={g.thumb_url} alt={g.description ?? t("garment.alt")} loading="lazy" />
+                {tagging.has(g.id) && <span className="photo-badge">{t("tags.analyzing")}</span>}
               </div>
               {g.description && <span className="garment-desc">{g.description}</span>}
             </button>
@@ -115,6 +161,7 @@ export default function Carpeta() {
         onClose={() => setAdding(false)}
         onAdded={(g) => {
           if (g.folder_id === folderId) setGarments((prev) => [g, ...(prev ?? [])]);
+          autoTag(g);
         }}
       />
 
@@ -152,6 +199,8 @@ export default function Carpeta() {
             setGarments((prev) => (moved ? prev!.filter((x) => x.id !== g.id) : prev!.map((x) => (x.id === g.id ? g : x))));
           }}
           onDeleted={(g) => setGarments((prev) => prev!.filter((x) => x.id !== g.id))}
+          tagging={tagging.has(selected.id)}
+          onAnalyze={() => autoTag(selected)}
         />
       )}
     </section>
@@ -313,15 +362,24 @@ function GarmentSheet({
   onClose,
   onChanged,
   onDeleted,
+  tagging,
+  onAnalyze,
 }: {
   garment: Garment;
   folders: Folder[];
   onClose: () => void;
   onChanged: (g: Garment, moved: boolean) => void;
   onDeleted: (g: Garment) => void;
+  tagging: boolean;
+  onAnalyze: () => void;
 }) {
   const { t } = useI18n();
   const [description, setDescription] = useState(garment.description ?? "");
+
+  // Si la IA completó la descripción mientras el panel estaba abierto, mostrarla.
+  useEffect(() => {
+    setDescription((d) => d || garment.description || "");
+  }, [garment.description]);
   const [folderId, setFolderId] = useState(garment.folder_id);
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -356,6 +414,13 @@ function GarmentSheet({
         <div className="photo photo-preview">
           <img src={garment.image_url} alt={garment.description ?? t("garment.alt")} />
         </div>
+        {garment.tags ? (
+          <TagPills tags={garment.tags} />
+        ) : (
+          <button className="btn btn-outline btn-block" onClick={onAnalyze} disabled={tagging}>
+            <SparkleIcon width={18} height={18} /> {tagging ? t("tags.analyzing") : t("tags.analyze")}
+          </button>
+        )}
         <GarmentFields
           description={description}
           setDescription={setDescription}
@@ -440,5 +505,42 @@ function RenameSheet({
         {error && <p className="msg msg-error">{error}</p>}
       </form>
     </Sheet>
+  );
+}
+
+// ───────────────────────── Filtros por etiqueta ─────────────────────────
+
+function matches(tags: GarmentTags | undefined, season: Season | null, formality: Formality | null) {
+  if (!season && !formality) return true;
+  if (!tags) return false;
+  const seasonOk = !season || tags.season === season || tags.season === "all";
+  const formalityOk = !formality || tags.formality === formality;
+  return seasonOk && formalityOk;
+}
+
+function FilterRow<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+  allLabel,
+}: {
+  options: T[];
+  value: T | null;
+  onChange: (v: T | null) => void;
+  label: (v: T) => string;
+  allLabel: string;
+}) {
+  return (
+    <div className="chips chips-scroll">
+      <button className="chip chip-sm" aria-pressed={value === null} onClick={() => onChange(null)}>
+        {allLabel}
+      </button>
+      {options.map((o) => (
+        <button key={o} className="chip chip-sm" aria-pressed={value === o} onClick={() => onChange(value === o ? null : o)}>
+          {label(o)}
+        </button>
+      ))}
+    </div>
   );
 }
