@@ -3,21 +3,22 @@ import { httpsCallable } from "firebase/functions";
 import { functions } from "./firebase";
 import { getGarmentsByIds, userCol } from "./wardrobe";
 import type { Garment, Outfit, Weather } from "./types";
+import { translate, type Lang } from "./i18n";
 
 // La IA puede tardar: damos hasta 5 minutos (igual que el timeout de la función).
-const dayStyle = httpsCallable<{ prompt: string; weather: Weather | null }, { outfit: Outfit }>(functions, "dayStyle", {
+const dayStyle = httpsCallable<{ prompt: string; weather: Weather | null; lang: Lang }, { outfit: Outfit }>(functions, "dayStyle", {
   timeout: 300_000,
 });
 
-export async function requestDayStyle(prompt: string, weather: Weather | null): Promise<Outfit> {
+export async function requestDayStyle(prompt: string, weather: Weather | null, lang: Lang): Promise<Outfit> {
   try {
-    const { data } = await dayStyle({ prompt, weather });
+    const { data } = await dayStyle({ prompt, weather, lang });
     return data.outfit;
   } catch (err) {
     // Los HttpsError de la función ya traen un mensaje en español.
     const message = err instanceof Error ? err.message : "";
     if (message && message.toLowerCase() !== "internal") throw new Error(message);
-    throw new Error("No pude armar tu look. Probá de nuevo.");
+    throw new Error(translate("day.error"));
   }
 }
 

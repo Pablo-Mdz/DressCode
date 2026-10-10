@@ -1,5 +1,6 @@
 import type { Garment, Suggestion } from "../lib/types";
 import { CheckIcon } from "./Icons";
+import { useI18n } from "../lib/i18n";
 
 export default function OutfitCard({
   suggestion,
@@ -16,6 +17,7 @@ export default function OutfitCard({
   onChoose?: () => void;
   delay?: number;
 }) {
+  const { t } = useI18n();
   return (
     <article className="look fade-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="look-head">
@@ -28,7 +30,7 @@ export default function OutfitCard({
           const g = garments[id];
           return (
             <div key={id} className="photo look-piece">
-              {g ? <img src={g.thumb_url} alt={g.description ?? "Prenda"} /> : <span className="gone">Prenda eliminada</span>}
+              {g ? <img src={g.thumb_url} alt={g.description ?? t("garment.alt")} /> : <span className="gone">{t("look.deleted")}</span>}
             </div>
           );
         })}
@@ -37,7 +39,7 @@ export default function OutfitCard({
       <p className="look-text">{suggestion.explanation}</p>
       {suggestion.tip && (
         <div className="tip">
-          <span className="eyebrow">Consejo</span>
+          <span className="eyebrow">{t("look.tip")}</span>
           <p>{suggestion.tip}</p>
         </div>
       )}
@@ -45,11 +47,11 @@ export default function OutfitCard({
       {onChoose &&
         (chosen ? (
           <button className="btn btn-primary btn-block" onClick={onChoose}>
-            <CheckIcon width={18} height={18} /> Elegido
+            <CheckIcon width={18} height={18} /> {t("look.chosen")}
           </button>
         ) : (
           <button className="btn btn-outline-dark btn-block" onClick={onChoose}>
-            Elegir este look
+            {t("look.choose")}
           </button>
         ))}
     </article>

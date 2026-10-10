@@ -6,20 +6,16 @@ import type { Garment, Outfit, Weather } from "../lib/types";
 import OutfitCard from "../components/OutfitCard";
 import PageHeader from "../components/PageHeader";
 import { SparkleIcon, SunIcon } from "../components/Icons";
+import { useI18n, type MessageKey } from "../lib/i18n";
 
-const IDEAS = [
-  { label: "Cena elegante", prompt: "Cena con amigos en un restaurante elegante" },
-  { label: "Oficina", prompt: "Día de oficina con una reunión importante" },
-  { label: "Casamiento de día", prompt: "Casamiento de día al aire libre" },
-  { label: "Domingo de feria", prompt: "Domingo de feria y café al aire libre" },
-  { label: "Primera cita", prompt: "Primera cita en un bar de vinos" },
-];
+const IDEAS = ["dinner", "office", "wedding", "market", "date"] as const;
 
-const LOADING_LINES = ["Abriendo tu ropero…", "Mirando colores y texturas…", "Probando combinaciones…", "Últimos detalles…"];
+const LOADING_LINES: MessageKey[] = ["day.loading1", "day.loading2", "day.loading3", "day.loading4"];
 
 const WEATHER_KEY = "dresscode.useWeather";
 
 export default function DayStyle() {
+  const { t, lang } = useI18n();
   const [prompt, setPrompt] = useState("");
   const [useWeather, setUseWeather] = useState(() => {
     try {
@@ -43,12 +39,12 @@ export default function DayStyle() {
     } catch {
       /* almacenamiento no disponible */
     }
-    if (!useWeather || weather) return;
+    if (!useWeather) return;
     setWeatherError(null);
-    fetchWeather()
+    fetchWeather(lang)
       .then(setWeather)
-      .catch(() => setWeatherError("No pude obtener tu ubicación"));
-  }, [useWeather, weather]);
+      .catch(() => setWeatherError(t("day.weatherError")));
+  }, [useWeather, lang, t]);
 
   useEffect(() => {
     if (!busy) return;
@@ -68,11 +64,11 @@ export default function DayStyle() {
     setError(null);
     setOutfit(null);
     try {
-      const o = await requestDayStyle(prompt.trim(), useWeather ? weather : null);
+      const o = await requestDayStyle(prompt.trim(), useWeather ? weather : null, lang);
       setGarments(await loadOutfitGarments([o]));
       setOutfit(o);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Algo salió mal");
+      setError(err instanceof Error ? err.message : t("common.genericError"));
     } finally {
       setBusy(false);
     }
@@ -89,31 +85,34 @@ export default function DayStyle() {
     }
   }
 
-  const weatherTitle = weather ? `${Math.round(weather.temperature)}° · ${weather.description}` : "Clima";
+  const weatherTitle = weather ? `${Math.round(weather.temperature)}° · ${weather.description}` : t("day.weather");
   const weatherSub = !useWeather
-    ? "Desactivado"
+    ? t("day.weatherOff")
     : weather
-      ? `Mín ${Math.round(weather.min)}° · Máx ${Math.round(weather.max)}° · Considerar el clima`
-      : (weatherError ?? "Buscando el clima…");
+      ? t("day.weatherDetail", { min: Math.round(weather.min), max: Math.round(weather.max) })
+      : (weatherError ?? t("day.weatherSearching"));
+  const [titleA, titleEm, titleB] = t("day.title").split(/<\/?em>/);
 
   return (
     <section className="page">
       <PageHeader
-        eyebrow="Day Style"
+        eyebrow={t("tab.dayStyle")}
         title={
           <>
-            ¿Qué te ponés <em>hoy</em>?
+            {titleA}
+            <em>{titleEm}</em>
+            {titleB}
           </>
         }
       />
 
       <form onSubmit={submit} className="form">
         <label className="prompt-box">
-          <span className="sr-only">Describí la ocasión</span>
+          <span className="sr-only">{t("day.describe")}</span>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Contame la ocasión. Ej: cena con amigos en un restaurante asiático elegante."
+            placeholder={t("day.placeholder")}
             rows={5}
             maxLength={1000}
             disabled={busy}
@@ -121,11 +120,17 @@ export default function DayStyle() {
         </label>
 
         <div className="stack-sm">
-          <span className="label">Ideas</span>
+          <span className="label">{t("day.ideas")}</span>
           <div className="chips">
             {IDEAS.map((idea) => (
-              <button type="button" key={idea.label} className="chip" onClick={() => setPrompt(idea.prompt)} disabled={busy}>
-                {idea.label}
+              <button
+                type="button"
+                key={idea}
+                className="chip"
+                onClick={() => setPrompt(t(`day.idea.${idea}.prompt` as MessageKey))}
+                disabled={busy}
+              >
+                {t(`day.idea.${idea}` as MessageKey)}
               </button>
             ))}
           </div>
@@ -134,14 +139,14 @@ export default function DayStyle() {
         <div className="weather-row">
           <SunIcon />
           <div className="weather-text">
-            <span>{useWeather ? weatherTitle : "Clima"}</span>
+            <span>{useWeather ? weatherTitle : t("day.weather")}</span>
             <span className="muted">{weatherSub}</span>
           </div>
           <button
             type="button"
             className={`switch ${useWeather ? "on" : ""}`}
             aria-pressed={useWeather}
-            aria-label="Considerar el clima"
+            aria-label={t("day.weatherToggle")}
             onClick={() => setUseWeather(!useWeather)}
           >
             <span />
@@ -149,7 +154,7 @@ export default function DayStyle() {
         </div>
 
         <button className="btn btn-primary btn-block btn-lg" disabled={busy || prompt.trim().length < 3}>
-          <SparkleIcon width={20} height={20} /> {busy ? "Creando tu look…" : "Crear mi look"}
+          <SparkleIcon width={20} height={20} /> {busy ? t("day.submitting") : t("day.submit")}
         </button>
       </form>
 
@@ -159,7 +164,7 @@ export default function DayStyle() {
         <div className="thinking fade-in">
           <div className="spinner" />
           <p key={line} className="fade-in">
-            {LOADING_LINES[line]}
+            {t(LOADING_LINES[line])}
           </p>
         </div>
       )}
@@ -167,10 +172,10 @@ export default function DayStyle() {
       {error && (
         <p className="msg msg-error">
           {error}
-          {error.includes("Ropero") && (
+          {error.toLowerCase().includes(t("tab.wardrobe").toLowerCase()) && (
             <>
               {" "}
-              <Link to="/ropero">Ir al Ropero</Link>
+              <Link to="/ropero">{t("day.goWardrobe")}</Link>
             </>
           )}
         </p>
@@ -179,7 +184,7 @@ export default function DayStyle() {
       {outfit && (
         <div className="looks">
           <header className="looks-head">
-            <span className="eyebrow">Tus looks para</span>
+            <span className="eyebrow">{t("day.resultsFor")}</span>
             <p className="looks-prompt">“{outfit.prompt}”</p>
             {outfit.weather && (
               <span className="muted">

@@ -16,6 +16,7 @@ import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage
 import { auth, db, storage } from "./firebase";
 import { prepareImages } from "./image";
 import type { Folder, Garment } from "./types";
+import { getLang, translate } from "./i18n";
 
 // Estructura en Firestore:
 //   users/{uid}                    → { initialized: true }
@@ -23,11 +24,14 @@ import type { Folder, Garment } from "./types";
 //   users/{uid}/garments/{id}      → Garment
 //   users/{uid}/outfits/{id}       → Outfit (lo escribe la Cloud Function)
 
-const DEFAULT_FOLDERS = ["Camisas", "Remeras", "Pantalones", "Calzado", "Camperas", "Accesorios", "Otros"];
+const DEFAULT_FOLDERS = {
+  es: ["Camisas", "Remeras", "Pantalones", "Calzado", "Camperas", "Accesorios", "Otros"],
+  en: ["Shirts", "T-shirts", "Trousers", "Shoes", "Jackets", "Accessories", "Other"],
+};
 
 function uid(): string {
   const id = auth.currentUser?.uid;
-  if (!id) throw new Error("Sesión expirada. Volvé a entrar.");
+  if (!id) throw new Error(translate("common.sessionExpired"));
   return id;
 }
 
@@ -40,7 +44,7 @@ export async function ensureDefaultFolders(userId: string) {
   if (snap.exists()) return;
   const batch = writeBatch(db);
   const now = Date.now();
-  DEFAULT_FOLDERS.forEach((name, position) => {
+  DEFAULT_FOLDERS[getLang()].forEach((name, position) => {
     batch.set(doc(collection(db, "users", userId, "folders")), { name, position, created_at: now + position });
   });
   batch.set(userRef, { initialized: true, created_at: now });

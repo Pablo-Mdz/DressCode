@@ -667,6 +667,22 @@ textarea::placeholder {
   padding: calc(84px + var(--safe-t)) 28px calc(32px + var(--safe-b));
 }
 
+.login {
+  position: relative;
+}
+
+.login-lang {
+  position: absolute;
+  top: calc(16px + var(--safe-t));
+  right: 22px;
+}
+
+.segmented.lang-compact button {
+  width: 42px;
+  height: 30px;
+  font-size: 12px;
+}
+
 .login-crest {
   display: flex;
   flex-direction: column;

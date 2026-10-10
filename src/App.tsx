@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { isConfigured } from "./lib/firebase";
+import { useI18n } from "./lib/i18n";
 import Layout from "./components/Layout";
 import Splash from "./components/Splash";
 import Login from "./pages/Login";
@@ -12,12 +13,13 @@ import Shopping from "./pages/Shopping";
 
 export default function App() {
   const { user, loading } = useAuth();
+  const { t } = useI18n();
 
   if (!isConfigured) {
     return (
       <Splash>
         <p className="muted center">
-          Falta configurar Firebase. Completá las variables <code>VITE_FIREBASE_*</code> (ver README).
+          {t("common.notConfigured", { vars: "VITE_FIREBASE_*" })}
         </p>
       </Splash>
     );

@@ -23,6 +23,47 @@ const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5-5";
 const MAX_GARMENTS = 120;
 const CALL_OPTS = { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 300, memory: "512MiB" as const };
 
+// ─────────────────────────── Idioma ───────────────────────────
+
+type Lang = "es" | "en";
+const pickLang = (raw: unknown): Lang => (raw === "en" ? "en" : "es");
+
+const MESSAGES = {
+  es: {
+    unauthenticated: "Tenés que iniciar sesión.",
+    rateLimited: "El estilista está con mucha demanda. Probá de nuevo en un minuto.",
+    missingKey: "Falta configurar la API key de Anthropic.",
+    unavailable: "No pude completar el pedido. Probá de nuevo.",
+    refusal: "No puedo ayudarte con ese pedido. Probá describiéndolo de otra forma.",
+    truncated: "La respuesta quedó incompleta. Probá de nuevo.",
+    unparseable: "No pude interpretar la respuesta. Probá de nuevo.",
+    promptShort: "Contame un poco más sobre la ocasión.",
+    promptLong: "La descripción es demasiado larga.",
+    needTwo: "Subí al menos un par de prendas a tu Ropero para que pueda armarte un look.",
+    needThree: "Subí al menos 3 prendas a tu Ropero para que pueda ver qué te falta.",
+    noCombination: "No encontré una combinación posible. Probá de nuevo.",
+  },
+  en: {
+    unauthenticated: "Please sign in.",
+    rateLimited: "The stylist is very busy right now. Please try again in a minute.",
+    missingKey: "The Anthropic API key isn't configured.",
+    unavailable: "I couldn't complete the request. Please try again.",
+    refusal: "I can't help with that request. Try describing it differently.",
+    truncated: "The answer came back incomplete. Please try again.",
+    unparseable: "I couldn't read the answer. Please try again.",
+    promptShort: "Tell me a bit more about the occasion.",
+    promptLong: "That description is too long.",
+    needTwo: "Add at least a couple of items to your Wardrobe so I can put a look together.",
+    needThree: "Add at least 3 items to your Wardrobe so I can see what's missing.",
+    noCombination: "I couldn't find a possible combination. Please try again.",
+  },
+};
+
+const VOICE: Record<Lang, string> = {
+  es: "Escribí todo el texto de la respuesta en español rioplatense, con criterio y elegancia, cálido y sin exagerar.",
+  en: "Write all text in the answer in natural, elegant English: warm and confident, never over the top.",
+};
+
 // ─────────────────────────── Ropero compartido ───────────────────────────
 
 type Wardrobe = {
@@ -78,7 +119,13 @@ async function loadWardrobe(uid: string, minGarments: number, emptyMessage: stri
   return { ids: new Set(garments.map((g) => g.id)), blocks };
 }
 
-async function askClaude<T>(system: string, content: Anthropic.Beta.BetaContentBlockParam[], schema: object): Promise<T> {
+async function askClaude<T>(
+  system: string,
+  content: Anthropic.Beta.BetaContentBlockParam[],
+  schema: object,
+  lang: Lang,
+): Promise<T> {
+  const m = MESSAGES[lang];
   const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
   let response: Anthropic.Beta.BetaMessage;
   try {
@@ -97,19 +144,19 @@ async function askClaude<T>(system: string, content: Anthropic.Beta.BetaContentB
   } catch (err) {
     logger.error("Error de Anthropic", err);
     if (err instanceof Anthropic.RateLimitError) {
-      throw new HttpsError("resource-exhausted", "El estilista está con mucha demanda. Probá de nuevo en un minuto.");
+      throw new HttpsError("resource-exhausted", m.rateLimited);
     }
     if (err instanceof Anthropic.AuthenticationError) {
-      throw new HttpsError("internal", "Falta configurar la API key de Anthropic.");
+      throw new HttpsError("internal", m.missingKey);
     }
-    throw new HttpsError("unavailable", "No pude completar el pedido. Probá de nuevo.");
+    throw new HttpsError("unavailable", m.unavailable);
   }
 
   if (response.stop_reason === "refusal") {
-    throw new HttpsError("invalid-argument", "No puedo ayudarte con ese pedido. Probá describiéndolo de otra forma.");
+    throw new HttpsError("invalid-argument", m.refusal);
   }
   if (response.stop_reason === "max_tokens") {
-    throw new HttpsError("unavailable", "La respuesta quedó incompleta. Probá de nuevo.");
+    throw new HttpsError("unavailable", m.truncated);
   }
   logger.info("Claude", { model: response.model, usage: response.usage });
 
@@ -117,11 +164,9 @@ async function askClaude<T>(system: string, content: Anthropic.Beta.BetaContentB
   try {
     return JSON.parse(text && text.type === "text" ? text.text : "") as T;
   } catch {
-    throw new HttpsError("unavailable", "No pude interpretar la respuesta. Probá de nuevo.");
+    throw new HttpsError("unavailable", m.unparseable);
   }
 }
-
-const STYLIST_VOICE = "Escribí en español rioplatense, con criterio y elegancia, cálido y sin exagerar.";
 
 // ─────────────────────────── Day Style ───────────────────────────
 
@@ -147,8 +192,7 @@ Reglas:
 - Si hay datos del clima, tenelos en cuenta.
 - title: nombre corto y evocador del look (máx. 4 palabras).
 - explanation: 2-3 oraciones explicando por qué funciona para la ocasión.
-- tip: un consejo concreto de styling (cómo llevarlo, qué ajustar, qué evitar).
-- ${STYLIST_VOICE}`;
+- tip: un consejo concreto de styling (cómo llevarlo, qué ajustar, qué evitar).`;
 
 const DAY_STYLE_SCHEMA = {
   type: "object",
@@ -185,24 +229,23 @@ function describeWeather(w: Weather | null): string {
 }
 
 export const dayStyle = onCall(CALL_OPTS, async (request) => {
+  const lang = pickLang(request.data?.lang);
+  const m = MESSAGES[lang];
   const uid = request.auth?.uid;
-  if (!uid) throw new HttpsError("unauthenticated", "Tenés que iniciar sesión.");
+  if (!uid) throw new HttpsError("unauthenticated", m.unauthenticated);
 
   const prompt = String(request.data?.prompt ?? "").trim();
-  if (prompt.length < 3) throw new HttpsError("invalid-argument", "Contame un poco más sobre la ocasión.");
-  if (prompt.length > 1000) throw new HttpsError("invalid-argument", "La descripción es demasiado larga.");
+  if (prompt.length < 3) throw new HttpsError("invalid-argument", m.promptShort);
+  if (prompt.length > 1000) throw new HttpsError("invalid-argument", m.promptLong);
   const weather: Weather | null = request.data?.weather ?? null;
 
-  const wardrobe = await loadWardrobe(
-    uid,
-    2,
-    "Subí al menos un par de prendas a tu Ropero para que pueda armarte un look.",
-  );
+  const wardrobe = await loadWardrobe(uid, 2, m.needTwo);
 
   const parsed = await askClaude<{ outfits: Suggestion[] }>(
-    DAY_STYLE_PROMPT,
+    `${DAY_STYLE_PROMPT}\n- ${VOICE[lang]}`,
     [...wardrobe.blocks, { type: "text", text: `Ocasión: ${prompt}${describeWeather(weather)}\n\nArmame 2 o 3 outfits.` }],
     DAY_STYLE_SCHEMA,
+    lang,
   );
 
   // Filtramos IDs inexistentes y outfits vacíos.
@@ -211,7 +254,7 @@ export const dayStyle = onCall(CALL_OPTS, async (request) => {
     .filter((o) => o.garment_ids.length > 0)
     .slice(0, 3);
   if (suggestions.length === 0) {
-    throw new HttpsError("unavailable", "No encontré una combinación posible. Probá de nuevo.");
+    throw new HttpsError("unavailable", m.noCombination);
   }
 
   const outfit = { prompt, weather, suggestions, chosen_index: null, created_at: Date.now() };
@@ -257,7 +300,7 @@ Reglas:
 - why: 1-2 oraciones explicando qué hueco cubre y por qué conviene.
 - pair_ids: 2 a 4 IDs de prendas del ropero con las que combina mejor, copiados exactamente.
 - summary: una lectura del ropero en 1-2 oraciones: qué tiene de bueno y qué le falta.
-- ${STYLIST_VOICE}`;
+- tag y kind son valores técnicos: usá exactamente los valores permitidos, sin traducirlos.`;
 
 const SHOPPING_SCHEMA = {
   type: "object",
@@ -297,13 +340,15 @@ function cleanPrefs(raw: unknown): ShoppingPrefs {
 }
 
 export const shoppingSuggestions = onCall(CALL_OPTS, async (request) => {
+  const lang = pickLang(request.data?.lang);
+  const m = MESSAGES[lang];
   const uid = request.auth?.uid;
-  if (!uid) throw new HttpsError("unauthenticated", "Tenés que iniciar sesión.");
+  if (!uid) throw new HttpsError("unauthenticated", m.unauthenticated);
   const prefs = cleanPrefs(request.data?.prefs);
 
   const metaRef = getFirestore().collection("users").doc(uid).collection("meta").doc("shopping");
   const [wardrobe, metaSnap] = await Promise.all([
-    loadWardrobe(uid, 3, "Subí al menos 3 prendas a tu Ropero para que pueda ver qué te falta."),
+    loadWardrobe(uid, 3, m.needThree),
     metaRef.get(),
   ]);
   const excluded = ((metaSnap.get("excluded") as string[] | undefined) ?? []).slice(-50);
@@ -320,9 +365,10 @@ export const shoppingSuggestions = onCall(CALL_OPTS, async (request) => {
     .join("\n");
 
   const parsed = await askClaude<{ summary: string; items: Omit<ShoppingItem, "id">[] }>(
-    SHOPPING_PROMPT,
+    `${SHOPPING_PROMPT}\n- ${VOICE[lang]}`,
     [...wardrobe.blocks, { type: "text", text: request_text }],
     SHOPPING_SCHEMA,
+    lang,
   );
 
   const items: ShoppingItem[] = parsed.items.slice(0, 6).map((it) => ({

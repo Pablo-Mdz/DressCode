@@ -3,6 +3,7 @@ import { httpsCallable } from "firebase/functions";
 import { auth, db, functions } from "./firebase";
 import { userCol } from "./wardrobe";
 import type { ListItem, ShoppingItem, ShoppingPrefs, ShoppingResult } from "./types";
+import { translate, type Lang } from "./i18n";
 
 // Firestore:
 //   users/{uid}/meta/shopping       → { prefs, result, excluded[] }
@@ -16,7 +17,7 @@ export const DEFAULT_PREFS: ShoppingPrefs = { styles: [], notes: "", budget: "Me
 
 const metaRef = () => {
   const uid = auth.currentUser?.uid;
-  if (!uid) throw new Error("Sesión expirada. Volvé a entrar.");
+  if (!uid) throw new Error(translate("common.sessionExpired"));
   return doc(db, "users", uid, "meta", "shopping");
 };
 
@@ -28,20 +29,20 @@ export async function loadShopping(): Promise<{ prefs: ShoppingPrefs; result: Sh
   return { prefs: { ...DEFAULT_PREFS, ...(data.prefs ?? {}) }, result: (data.result as ShoppingResult) ?? null };
 }
 
-const callShopping = httpsCallable<{ prefs: ShoppingPrefs }, { prefs: ShoppingPrefs; result: ShoppingResult }>(
+const callShopping = httpsCallable<{ prefs: ShoppingPrefs; lang: Lang }, { prefs: ShoppingPrefs; result: ShoppingResult }>(
   functions,
   "shoppingSuggestions",
   { timeout: 300_000 },
 );
 
-export async function requestShopping(prefs: ShoppingPrefs): Promise<ShoppingResult> {
+export async function requestShopping(prefs: ShoppingPrefs, lang: Lang): Promise<ShoppingResult> {
   try {
-    const { data } = await callShopping({ prefs });
+    const { data } = await callShopping({ prefs, lang });
     return data.result;
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
     if (message && message.toLowerCase() !== "internal") throw new Error(message);
-    throw new Error("No pude generar sugerencias. Probá de nuevo.");
+    throw new Error(translate("shop.error"));
   }
 }
 

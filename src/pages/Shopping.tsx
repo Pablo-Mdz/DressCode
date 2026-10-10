@@ -18,12 +18,14 @@ import PageHeader from "../components/PageHeader";
 import Sheet from "../components/Sheet";
 import Silhouette, { strokeFor } from "../components/Silhouette";
 import { BagIcon, CheckIcon, SparkleIcon } from "../components/Icons";
+import { useI18n, type MessageKey } from "../lib/i18n";
 
 type Filter = "Todo" | "Esencial" | "Para variar";
 
-const LOADING_LINES = ["Recorriendo tu ropero…", "Buscando huecos y combinaciones…", "Eligiendo las mejores piezas…"];
+const LOADING_LINES: MessageKey[] = ["shop.loading1", "shop.loading2", "shop.loading3"];
 
 export default function Shopping() {
+  const { t, plural, lang } = useI18n();
   const [prefs, setPrefs] = useState<ShoppingPrefs>(DEFAULT_PREFS);
   const [result, setResult] = useState<ShoppingResult | null>(null);
   const [list, setList] = useState<ListItem[]>([]);
@@ -48,14 +50,14 @@ export default function Shopping() {
         const folderName = Object.fromEntries(fs.map((f) => [f.id, f.name]));
         setGarments(
           Object.fromEntries(
-            gs.map((g) => [g.id, { ...g, label: shortLabel(g.description) || folderName[g.folder_id] || "Prenda" }]),
+            gs.map((g) => [g.id, { ...g, label: shortLabel(g.description) || folderName[g.folder_id] || t("garment.alt") }]),
           ),
         );
         setPrefs(shopping.prefs);
         setResult(shopping.result);
         setList(items);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "No pude cargar Shopping");
+        setError(e instanceof Error ? e.message : t("shop.loadError"));
       } finally {
         setLoaded(true);
       }
@@ -77,10 +79,10 @@ export default function Shopping() {
     setError(null);
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     try {
-      setResult(await requestShopping(prefs));
+      setResult(await requestShopping(prefs, lang));
       setFilter("Todo");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Algo salió mal");
+      setError(err instanceof Error ? err.message : t("common.genericError"));
     } finally {
       setBusy(false);
     }
@@ -97,7 +99,7 @@ export default function Shopping() {
         setList((prev) => [entry, ...prev]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No pude actualizar tu lista");
+      setError(err instanceof Error ? err.message : t("shop.listError"));
     }
   }
 
@@ -106,7 +108,7 @@ export default function Shopping() {
     try {
       setResult(await dismissItem(result, item));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No pude guardar el cambio");
+      setError(err instanceof Error ? err.message : t("shop.saveError"));
     }
   }
 
@@ -115,13 +117,13 @@ export default function Shopping() {
   return (
     <section className="page">
       <PageHeader
-        title="Shopping"
-        subtitle="Lo que le falta a tu ropero"
+        title={t("shop.title")}
+        subtitle={t("shop.subtitle")}
         aside={
           <button
             className="avatar bag-btn"
             onClick={() => setListOpen(true)}
-            aria-label={`Mi lista de compras, ${list.length} ${list.length === 1 ? "prenda" : "prendas"}`}
+            aria-label={t("shop.listButton", { items: plural("garments", list.length) })}
           >
             <BagIcon width={20} height={20} />
             {list.length > 0 && <span className="badge">{list.length}</span>}
@@ -129,14 +131,14 @@ export default function Shopping() {
         }
       />
 
-      <section className="card-outline stack" aria-label="Orientá las sugerencias">
+      <section className="card-outline stack" aria-label={t("shop.guide")}>
         <div className="stack-xs">
-          <span className="eyebrow">Orientá las sugerencias</span>
-          <h2 className="serif-md">¿Hacia dónde querés llevar tu ropero?</h2>
+          <span className="eyebrow">{t("shop.guide")}</span>
+          <h2 className="serif-md">{t("shop.question")}</h2>
         </div>
 
         <div className="stack-sm">
-          <span className="label">Estilo · podés elegir varios</span>
+          <span className="label">{t("shop.style")}</span>
           <div className="chips">
             {STYLE_OPTIONS.map((s) => (
               <button
@@ -147,36 +149,35 @@ export default function Shopping() {
                 onClick={() => toggleStyle(s)}
                 disabled={busy}
               >
-                {s}
+                {t(`opt.${s}` as MessageKey)}
               </button>
             ))}
           </div>
         </div>
 
         <label className="stack-sm">
-          <span className="label">Contale algo más (opcional)</span>
+          <span className="label">{t("shop.notes")}</span>
           <textarea
             className="soft-input"
             rows={3}
             value={prefs.notes}
             onChange={(e) => setPrefs({ ...prefs, notes: e.target.value })}
-            placeholder="Ej: trabajo en oficina pero los viernes son informales. Quiero algo más moderno y evitar el marrón."
+            placeholder={t("shop.notesPlaceholder")}
             maxLength={600}
             disabled={busy}
           />
         </label>
 
         <Segmented
-          label="Presupuesto"
+          label={t("shop.budget")}
           options={BUDGET_OPTIONS}
           value={prefs.budget}
           onChange={(budget) => setPrefs({ ...prefs, budget })}
           disabled={busy}
         />
         <Segmented
-          label="Temporada"
+          label={t("shop.season")}
           options={SEASON_OPTIONS}
-          labels={{ "Otoño-invierno": "Invierno", "Primavera-verano": "Verano" }}
           value={prefs.season}
           onChange={(season) => setPrefs({ ...prefs, season })}
           disabled={busy}
@@ -184,7 +185,7 @@ export default function Shopping() {
 
         <button className="btn btn-primary btn-block" onClick={generate} disabled={busy || !loaded}>
           <SparkleIcon width={18} height={18} />
-          {busy ? "Analizando tu ropero…" : result ? "Actualizar sugerencias" : "Sugerirme compras"}
+          {busy ? t("shop.analyzing") : result ? t("shop.update") : t("shop.suggest")}
         </button>
       </section>
 
@@ -194,7 +195,7 @@ export default function Shopping() {
         <div className="thinking fade-in">
           <div className="spinner" />
           <p key={line} className="fade-in">
-            {LOADING_LINES[line]}
+            {t(LOADING_LINES[line])}
           </p>
         </div>
       )}
@@ -202,10 +203,10 @@ export default function Shopping() {
       {error && (
         <p className="msg msg-error">
           {error}
-          {error.includes("Ropero") && (
+          {error.toLowerCase().includes(t("tab.wardrobe").toLowerCase()) && (
             <>
               {" "}
-              <Link to="/ropero">Ir al Ropero</Link>
+              <Link to="/ropero">{t("day.goWardrobe")}</Link>
             </>
           )}
         </p>
@@ -214,22 +215,22 @@ export default function Shopping() {
       {!busy && result && (
         <>
           <div className="reading fade-in">
-            <span className="eyebrow">Lectura de tu ropero</span>
+            <span className="eyebrow">{t("shop.reading")}</span>
             <p>{result.summary}</p>
           </div>
 
           <div className="chips">
             {(["Todo", "Esencial", "Para variar"] as Filter[]).map((f) => (
               <button key={f} className="chip" aria-pressed={filter === f} onClick={() => setFilter(f)}>
-                {f === "Esencial" ? "Esenciales" : f}
+                {f === "Todo" ? t("shop.filter.all") : f === "Esencial" ? t("shop.filter.essential") : t("shop.filter.variety")}
               </button>
             ))}
           </div>
 
           {items.length === 0 && (
             <div className="empty">
-              <p className="empty-title">No hay sugerencias acá</p>
-              <p className="muted">Probá otro filtro o actualizá las sugerencias.</p>
+              <p className="empty-title">{t("shop.noItems")}</p>
+              <p className="muted">{t("shop.noItemsText")}</p>
             </div>
           )}
 
@@ -242,16 +243,14 @@ export default function Shopping() {
                     <Silhouette kind={item.kind} stroke={strokeFor(item.color_hex)} width={84} />
                   </div>
                   <div className="buy-info">
-                    <span className="eyebrow">{item.tag}</span>
+                    <span className="eyebrow">{t(`shop.tag.${item.tag}` as MessageKey)}</span>
                     <h2 className="serif-md">{item.name}</h2>
                     <span className="swatch-line">
                       <span className="swatch" style={{ background: item.color_hex }} />
                       {item.color_name} · {item.material}
                     </span>
                     {item.new_looks > 0 && (
-                      <span className="gain">
-                        +{item.new_looks} {item.new_looks === 1 ? "look nuevo" : "looks nuevos"}
-                      </span>
+                      <span className="gain">{plural("shop.newLooks", item.new_looks)}</span>
                     )}
                   </div>
                 </div>
@@ -260,7 +259,7 @@ export default function Shopping() {
 
                 {item.pair_ids.some((id) => garments[id]) && (
                   <div className="stack-sm">
-                    <span className="label">Combina con lo que ya tenés</span>
+                    <span className="label">{t("shop.pairsWith")}</span>
                     <div className="pairs">
                       {item.pair_ids
                         .filter((id) => garments[id])
@@ -278,14 +277,14 @@ export default function Shopping() {
                   <button className={`btn ${inList ? "btn-outline-dark" : "btn-primary"}`} onClick={() => toggleList(item)}>
                     {inList ? (
                       <>
-                        <CheckIcon width={18} height={18} /> En tu lista
+                        <CheckIcon width={18} height={18} /> {t("shop.inList")}
                       </>
                     ) : (
-                      "Agregar a mi lista"
+                      t("shop.addToList")
                     )}
                   </button>
                   <button className="btn btn-outline" onClick={() => dismiss(item)}>
-                    Ya la tengo
+                    {t("shop.haveIt")}
                   </button>
                 </div>
               </article>
@@ -296,16 +295,16 @@ export default function Shopping() {
 
       {loaded && !busy && !result && !error && (
         <div className="empty">
-          <p className="empty-title">Tu próxima compra, con criterio</p>
-          <p className="muted">Elegí un estilo y tocá “Sugerirme compras”. Voy a mirar tu ropero y decirte qué le falta.</p>
+          <p className="empty-title">{t("shop.emptyTitle")}</p>
+          <p className="muted">{t("shop.emptyText")}</p>
         </div>
       )}
 
-      <Sheet open={listOpen} onClose={() => setListOpen(false)} title="Mi lista" cancelLabel="Cerrar">
+      <Sheet open={listOpen} onClose={() => setListOpen(false)} title={t("shop.listTitle")} cancelLabel={t("common.close")}>
         {list.length === 0 ? (
           <div className="empty">
-            <p className="empty-title">Tu lista está vacía</p>
-            <p className="muted">Agregá sugerencias para tenerlas a mano cuando salgas de compras.</p>
+            <p className="empty-title">{t("shop.listEmpty")}</p>
+            <p className="muted">{t("shop.listEmptyText")}</p>
           </div>
         ) : (
           <div className="list">
@@ -327,7 +326,7 @@ export default function Shopping() {
                     await removeFromList(l.id).catch(() => undefined);
                   }}
                 >
-                  Quitar
+                  {t("shop.remove")}
                 </button>
               </div>
             ))}
@@ -341,25 +340,24 @@ export default function Shopping() {
 function Segmented({
   label,
   options,
-  labels = {},
   value,
   onChange,
   disabled,
 }: {
   label: string;
   options: string[];
-  labels?: Record<string, string>;
   value: string;
   onChange: (v: string) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div className="stack-sm">
       <span className="label">{label}</span>
       <div className="segmented small" role="group" aria-label={label}>
         {options.map((o) => (
           <button key={o} type="button" aria-pressed={value === o} onClick={() => onChange(o)} disabled={disabled}>
-            {labels[o] ?? o}
+            {t(`opt.${o}` as MessageKey)}
           </button>
         ))}
       </div>
