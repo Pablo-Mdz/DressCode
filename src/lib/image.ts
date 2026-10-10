@@ -35,6 +35,23 @@ function toJpeg(source: ImageBitmap | HTMLImageElement, maxSide: number, quality
   );
 }
 
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Foto achicada en base64 (para mandarla directo a la IA, sin guardarla).
+export async function imageToBase64(file: File, maxSide = 1024): Promise<string> {
+  const bitmap = await loadBitmap(file);
+  const jpeg = await toJpeg(bitmap, maxSide, 0.82);
+  if ("close" in bitmap) bitmap.close();
+  return blobToBase64(jpeg);
+}
+
 export async function prepareImages(file: File): Promise<{ full: Blob; thumb: Blob }> {
   const bitmap = await loadBitmap(file);
   const [full, thumb] = await Promise.all([toJpeg(bitmap, 1400, 0.85), toJpeg(bitmap, 512, 0.8)]);

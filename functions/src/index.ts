@@ -20,6 +20,8 @@ setGlobalOptions({ region: "europe-west1", maxInstances: 5 });
 
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
 const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5-5";
+// Modelo rápido y económico para etiquetar prendas al subirlas.
+const TAG_MODEL = process.env.ANTHROPIC_TAG_MODEL ?? "claude-haiku-5-5";
 const MAX_GARMENTS = 120;
 const CALL_OPTS = { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 300, memory: "512MiB" as const };
 
@@ -41,6 +43,9 @@ const MESSAGES = {
     promptLong: "La descripción es demasiado larga.",
     needTwo: "Subí al menos un par de prendas a tu Ropero para que pueda armarte un look.",
     needThree: "Subí al menos 3 prendas a tu Ropero para que pueda ver qué te falta.",
+    needOne: "Subí al menos una prenda a tu Ropero para que pueda compararla.",
+    badImage: "No pude leer la foto. Probá con otra.",
+    notFound: "No encontré esa prenda.",
     noCombination: "No encontré una combinación posible. Probá de nuevo.",
   },
   en: {
@@ -55,6 +60,9 @@ const MESSAGES = {
     promptLong: "That description is too long.",
     needTwo: "Add at least a couple of items to your Wardrobe so I can put a look together.",
     needThree: "Add at least 3 items to your Wardrobe so I can see what's missing.",
+    needOne: "Add at least one item to your Wardrobe so I can compare.",
+    badImage: "I couldn't read the photo. Try another one.",
+    notFound: "I couldn't find that item.",
     noCombination: "I couldn't find a possible combination. Please try again.",
   },
 };
@@ -65,6 +73,14 @@ const VOICE: Record<Lang, string> = {
 };
 
 // ─────────────────────────── Ropero compartido ───────────────────────────
+
+type GarmentTags = {
+  kind: string;
+  color_name: string;
+  color_hex: string;
+  season: string;
+  formality: string;
+};
 
 type Wardrobe = {
   ids: Set<string>;
@@ -85,6 +101,7 @@ async function loadWardrobe(uid: string, minGarments: number, emptyMessage: stri
     folder: folderNames.get(d.get("folder_id")) ?? "Sin carpeta",
     description: ((d.get("description") as string | null) ?? "").trim(),
     thumbPath: d.get("thumb_path") as string,
+    tags: d.get("tags") as GarmentTags | undefined,
   }));
 
   // Miniaturas en base64: bytes estables, así el prefijo del ropero se puede cachear.
@@ -107,7 +124,11 @@ async function loadWardrobe(uid: string, minGarments: number, emptyMessage: stri
   garments.forEach((g, i) => {
     blocks.push({
       type: "text",
-      text: `ID: ${g.id} · Carpeta: ${g.folder} · Descripción: ${g.description || "sin descripción"}`,
+      text:
+        `ID: ${g.id} · Carpeta: ${g.folder} · Descripción: ${g.description || "sin descripción"}` +
+        (g.tags
+          ? ` · Tipo: ${g.tags.kind} · Color: ${g.tags.color_name} · Temporada: ${g.tags.season} · Formalidad: ${g.tags.formality}`
+          : ""),
     });
     const img = images[i];
     if (img) blocks.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: img } });
@@ -383,4 +404,212 @@ export const shoppingSuggestions = onCall(CALL_OPTS, async (request) => {
   const result = { summary: parsed.summary, items, created_at: Date.now() };
   await metaRef.set({ prefs, result }, { merge: true });
   return { prefs, result };
+});
+
+// ─────────────────────────── Etiquetado automático ───────────────────────────
+
+const SEASONS_TAG = ["summer", "winter", "mid", "all"];
+const FORMALITY_TAG = ["casual", "smart", "formal", "sport"];
+
+const TAG_PROMPT = `Sos un asistente de moda que cataloga prendas a partir de una foto.
+Devolvé:
+- kind: el tipo de prenda, uno de la lista permitida.
+- color_name: el color principal, en pocas palabras (ej: "azul marino", "blanco roto").
+- color_hex: ese color como hex de 6 dígitos con #.
+- season: "summer" (calor), "winter" (frío), "mid" (entretiempo) o "all" (todo el año).
+- formality: "casual", "smart" (smart casual / oficina), "formal" o "sport".
+- description: descripción breve y concreta, de 4 a 10 palabras (ej: "Camisa de lino blanca, corte slim").
+kind, season y formality son valores técnicos: usá exactamente los valores permitidos.`;
+
+const TAG_SCHEMA = {
+  type: "object",
+  properties: {
+    kind: { type: "string", enum: KINDS },
+    color_name: { type: "string" },
+    color_hex: { type: "string" },
+    season: { type: "string", enum: SEASONS_TAG },
+    formality: { type: "string", enum: FORMALITY_TAG },
+    description: { type: "string" },
+  },
+  required: ["kind", "color_name", "color_hex", "season", "formality", "description"],
+  additionalProperties: false,
+};
+
+export const tagGarment = onCall(
+  { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 60, memory: "256MiB" },
+  async (request) => {
+    const lang = pickLang(request.data?.lang);
+    const m = MESSAGES[lang];
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", m.unauthenticated);
+
+    const garmentId = String(request.data?.garmentId ?? "");
+    if (!/^[A-Za-z0-9]{10,40}$/.test(garmentId)) throw new HttpsError("invalid-argument", m.notFound);
+    const ref = getFirestore().collection("users").doc(uid).collection("garments").doc(garmentId);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError("not-found", m.notFound);
+
+    let image: string;
+    try {
+      const [buf] = await getStorage().bucket().file(String(snap.get("thumb_path"))).download();
+      image = buf.toString("base64");
+    } catch {
+      throw new HttpsError("not-found", m.notFound);
+    }
+
+    const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
+    let response: Anthropic.Message;
+    try {
+      response = await anthropic.messages.create({
+        model: TAG_MODEL,
+        max_tokens: 2000,
+        output_config: { effort: "low", format: { type: "json_schema", schema: TAG_SCHEMA } },
+        system: `${TAG_PROMPT}\n${VOICE[lang]} (color_name y description en ese idioma).`,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: "image/jpeg", data: image } },
+              { type: "text", text: "Catalogá esta prenda." },
+            ],
+          },
+        ],
+      });
+    } catch (err) {
+      logger.error("Error de Anthropic (tag)", err);
+      if (err instanceof Anthropic.RateLimitError) throw new HttpsError("resource-exhausted", m.rateLimited);
+      throw new HttpsError("unavailable", m.unavailable);
+    }
+    if (response.stop_reason === "refusal" || response.stop_reason === "max_tokens") {
+      throw new HttpsError("unavailable", m.unavailable);
+    }
+
+    const text = response.content.find((b) => b.type === "text");
+    let parsed: GarmentTags & { description: string };
+    try {
+      parsed = JSON.parse(text && text.type === "text" ? text.text : "");
+    } catch {
+      throw new HttpsError("unavailable", m.unparseable);
+    }
+
+    const tags: GarmentTags = {
+      kind: KINDS.includes(parsed.kind) ? parsed.kind : "accesorio",
+      color_name: String(parsed.color_name).slice(0, 40),
+      color_hex: /^#[0-9a-fA-F]{6}$/.test(parsed.color_hex) ? parsed.color_hex : "#D9D9D6",
+      season: SEASONS_TAG.includes(parsed.season) ? parsed.season : "all",
+      formality: FORMALITY_TAG.includes(parsed.formality) ? parsed.formality : "casual",
+    };
+    const current = ((snap.get("description") as string | null) ?? "").trim();
+    const description = current || String(parsed.description).trim().slice(0, 200) || null;
+
+    await ref.update({ tags, description });
+    return { tags, description };
+  },
+);
+
+// ─────────────────────────── ¿Lo compro? ───────────────────────────
+
+type BuyVerdict = {
+  verdict: "buy" | "maybe" | "skip";
+  headline: string;
+  reasoning: string;
+  item: { name: string; kind: string; color_name: string; color_hex: string; material: string };
+  pairs: { garment_id: string; note: string }[];
+  similar_ids: string[];
+  new_looks: number;
+  tip: string;
+};
+
+const BUY_PROMPT = `Sos el estilista personal de DressCode: gusto parisino, minimalista y preciso.
+El usuario está en una tienda y te manda la foto de una prenda que está pensando comprar. Tu tarea: decirle con honestidad si le conviene, según SU ropero.
+
+Reglas:
+- Mirá la prenda candidata (última imagen) y comparala con las prendas del ropero (fotos, descripciones y etiquetas).
+- verdict: "buy" si suma variedad real y combina con varias prendas; "maybe" si tiene pros y contras; "skip" si repite algo que ya tiene, combina con poco o no encaja con su estilo.
+- headline: veredicto en una frase corta y directa (máx. 8 palabras).
+- reasoning: 2-3 oraciones explicando por qué, concretas y referidas a su ropero.
+- item: describí la prenda candidata (name corto, kind de la lista permitida, color_name, color_hex de 6 dígitos con #, material probable).
+- pairs: de 2 a 4 prendas del ropero con las que combina mejor (garment_id exacto) y una nota breve de cómo combinarlas.
+- similar_ids: IDs de prendas del ropero muy parecidas a la candidata (vacío si no hay).
+- new_looks: estimación honesta de cuántos looks nuevos y razonables habilita.
+- tip: un consejo concreto (talle, calce, color alternativo, qué revisar antes de comprar).
+- Si el usuario agrega un comentario (precio, talle, ocasión), tenelo en cuenta.
+- verdict y kind son valores técnicos: usá exactamente los valores permitidos.`;
+
+const BUY_SCHEMA = {
+  type: "object",
+  properties: {
+    verdict: { type: "string", enum: ["buy", "maybe", "skip"] },
+    headline: { type: "string" },
+    reasoning: { type: "string" },
+    item: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        kind: { type: "string", enum: KINDS },
+        color_name: { type: "string" },
+        color_hex: { type: "string" },
+        material: { type: "string" },
+      },
+      required: ["name", "kind", "color_name", "color_hex", "material"],
+      additionalProperties: false,
+    },
+    pairs: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { garment_id: { type: "string" }, note: { type: "string" } },
+        required: ["garment_id", "note"],
+        additionalProperties: false,
+      },
+    },
+    similar_ids: { type: "array", items: { type: "string" } },
+    new_looks: { type: "integer" },
+    tip: { type: "string" },
+  },
+  required: ["verdict", "headline", "reasoning", "item", "pairs", "similar_ids", "new_looks", "tip"],
+  additionalProperties: false,
+};
+
+export const shouldBuy = onCall(CALL_OPTS, async (request) => {
+  const lang = pickLang(request.data?.lang);
+  const m = MESSAGES[lang];
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", m.unauthenticated);
+
+  const image = String(request.data?.image ?? "");
+  // JPEG en base64, ya achicado en el teléfono (máx. ~3 MB).
+  if (!/^[A-Za-z0-9+/=]+$/.test(image) || image.length < 1000 || image.length > 4_000_000) {
+    throw new HttpsError("invalid-argument", m.badImage);
+  }
+  const note = String(request.data?.note ?? "").trim().slice(0, 400);
+
+  const wardrobe = await loadWardrobe(uid, 1, m.needOne);
+
+  const parsed = await askClaude<BuyVerdict>(
+    `${BUY_PROMPT}\n- ${VOICE[lang]}`,
+    [
+      ...wardrobe.blocks,
+      { type: "text", text: "Esta es la prenda que estoy pensando comprar:" },
+      { type: "image", source: { type: "base64", media_type: "image/jpeg", data: image } },
+      { type: "text", text: `${note ? `Comentario: ${note}\n` : ""}¿Me conviene comprarla?` },
+    ],
+    BUY_SCHEMA,
+    lang,
+  );
+
+  return {
+    result: {
+      ...parsed,
+      verdict: ["buy", "maybe", "skip"].includes(parsed.verdict) ? parsed.verdict : "maybe",
+      item: {
+        ...parsed.item,
+        kind: KINDS.includes(parsed.item.kind) ? parsed.item.kind : "accesorio",
+        color_hex: /^#[0-9a-fA-F]{6}$/.test(parsed.item.color_hex) ? parsed.item.color_hex : "#D9D9D6",
+      },
+      pairs: parsed.pairs.filter((p) => wardrobe.ids.has(p.garment_id)).slice(0, 4),
+      similar_ids: [...new Set(parsed.similar_ids)].filter((id) => wardrobe.ids.has(id)).slice(0, 4),
+      new_looks: Math.max(0, Math.min(99, Math.round(parsed.new_looks))),
+    },
+  };
 });

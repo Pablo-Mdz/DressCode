@@ -210,6 +210,53 @@ const es = {
   "opt.Otoño-invierno": "Invierno",
   "opt.Primavera-verano": "Verano",
   "opt.Todo el año": "Todo el año",
+
+  // Etiquetas
+  "tags.analyzing": "Analizando…",
+  "tags.analyze": "Analizar con IA",
+  "tags.untagged.one": "{n} prenda sin etiquetar",
+  "tags.untagged.other": "{n} prendas sin etiquetar",
+  "tags.untaggedText": "La IA detecta tipo, color, temporada y formalidad para armar mejores looks.",
+  "tags.tagAll": "Etiquetar con IA",
+  "tags.progress": "Etiquetando {done} de {total}…",
+  "tags.error": "No pude analizar la prenda",
+  "filter.all": "Todas",
+  "season.summer": "Verano",
+  "season.winter": "Invierno",
+  "season.mid": "Entretiempo",
+  "season.all": "Todo el año",
+  "formality.casual": "Casual",
+  "formality.smart": "Smart",
+  "formality.formal": "Formal",
+  "formality.sport": "Deportivo",
+  "kind.remera": "Remera",
+  "kind.camisa": "Camisa",
+  "kind.sweater": "Sweater",
+  "kind.campera": "Campera",
+  "kind.pantalon": "Pantalón",
+  "kind.pollera": "Pollera",
+  "kind.vestido": "Vestido",
+  "kind.zapato": "Zapato",
+  "kind.zapatilla": "Zapatilla",
+  "kind.bolso": "Bolso",
+  "kind.accesorio": "Accesorio",
+
+  // ¿Lo compro?
+  "buy.title": "¿Lo compro?",
+  "buy.entry": "Sacale una foto en la tienda y te digo si suma a tu ropero.",
+  "buy.note": "Precio, talle o lo que quieras contarme (opcional)",
+  "buy.notePlaceholder": "Ej: 79 €, talle M. Es para la oficina.",
+  "buy.analyze": "Analizar",
+  "buy.loading1": "Mirando la prenda…",
+  "buy.loading2": "Comparando con tu ropero…",
+  "buy.loading3": "Pensando combinaciones…",
+  "buy.verdict.buy": "Compralo",
+  "buy.verdict.maybe": "Pensalo",
+  "buy.verdict.skip": "Mejor no",
+  "buy.pairs": "Combina con",
+  "buy.similar": "Ya tenés algo parecido",
+  "buy.another": "Analizar otra",
+  "buy.error": "No pude analizar la prenda. Probá de nuevo.",
 };
 
 export type MessageKey = keyof typeof es;
@@ -411,6 +458,51 @@ const en: Record<MessageKey, string> = {
   "opt.Otoño-invierno": "Winter",
   "opt.Primavera-verano": "Summer",
   "opt.Todo el año": "All year",
+
+  "tags.analyzing": "Analyzing…",
+  "tags.analyze": "Analyze with AI",
+  "tags.untagged.one": "{n} item without tags",
+  "tags.untagged.other": "{n} items without tags",
+  "tags.untaggedText": "The AI detects type, color, season and formality to build better looks.",
+  "tags.tagAll": "Tag with AI",
+  "tags.progress": "Tagging {done} of {total}…",
+  "tags.error": "I couldn't analyze the item",
+  "filter.all": "All",
+  "season.summer": "Summer",
+  "season.winter": "Winter",
+  "season.mid": "Mid-season",
+  "season.all": "All year",
+  "formality.casual": "Casual",
+  "formality.smart": "Smart",
+  "formality.formal": "Formal",
+  "formality.sport": "Sporty",
+  "kind.remera": "T-shirt",
+  "kind.camisa": "Shirt",
+  "kind.sweater": "Sweater",
+  "kind.campera": "Jacket",
+  "kind.pantalon": "Trousers",
+  "kind.pollera": "Skirt",
+  "kind.vestido": "Dress",
+  "kind.zapato": "Shoe",
+  "kind.zapatilla": "Sneaker",
+  "kind.bolso": "Bag",
+  "kind.accesorio": "Accessory",
+
+  "buy.title": "Should I buy it?",
+  "buy.entry": "Snap a photo in the store and I'll tell you if it adds to your wardrobe.",
+  "buy.note": "Price, size or anything else (optional)",
+  "buy.notePlaceholder": "E.g. €79, size M. It's for the office.",
+  "buy.analyze": "Analyze",
+  "buy.loading1": "Looking at the item…",
+  "buy.loading2": "Comparing with your wardrobe…",
+  "buy.loading3": "Thinking of combinations…",
+  "buy.verdict.buy": "Buy it",
+  "buy.verdict.maybe": "Think it over",
+  "buy.verdict.skip": "Better not",
+  "buy.pairs": "Goes with",
+  "buy.similar": "You already have something similar",
+  "buy.another": "Analyze another",
+  "buy.error": "I couldn't analyze the item. Please try again.",
 };
 
 export type Lang = "es" | "en";
@@ -449,7 +541,7 @@ type I18n = {
   lang: Lang;
   setLang: (l: Lang) => void;
   t: (key: MessageKey, vars?: Record<string, string | number>) => string;
-  plural: (base: "garments" | "folders" | "shop.newLooks", n: number) => string;
+  plural: (base: "garments" | "folders" | "shop.newLooks" | "tags.untagged", n: number) => string;
   locale: string;
 };
 
@@ -475,7 +567,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback((key: MessageKey, vars?: Record<string, string | number>) => translate(key, vars, lang), [lang]);
   const plural = useCallback(
-    (base: "garments" | "folders" | "shop.newLooks", n: number) =>
+    (base: "garments" | "folders" | "shop.newLooks" | "tags.untagged", n: number) =>
       translate(`${base}.${n === 1 ? "one" : "other"}` as MessageKey, { n }, lang),
     [lang],
   );
