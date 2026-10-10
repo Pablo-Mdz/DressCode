@@ -7,6 +7,7 @@ Tu ropero personal y tu estilista con IA. Es una PWA (se instala en el celular d
 - **Shopping**: la IA analiza tu ropero y te dice qué comprar para tener más variedad (por ejemplo, un pantalón azul marino que va con tus camisas celestes y blancas). Podés orientarla por estilo (formal, casual, deportivo…), presupuesto, temporada y con un comentario libre. Las sugerencias que te gustan van a **Mi lista**; con "Ya la tengo" no te las vuelve a sugerir.
 - **¿Lo compro?** (dentro de Shopping): sacale una foto a una prenda en la tienda y la IA te dice si conviene, con qué prendas tuyas combina y si ya tenés algo parecido.
 - **Etiquetado automático**: al subir una prenda, la IA detecta tipo, color, temporada y formalidad (y completa la descripción si está vacía). Permite filtrar cada carpeta y mejora los looks.
+- **Fondo blanco**: al subir una foto, el fondo se quita en el propio teléfono (gratis, sin servidores) y la prenda queda centrada sobre blanco. También se puede aplicar a prendas ya subidas.
 - **Historial**: todos los looks que pediste, con la opción de marcar el que elegiste.
 - **Cuentas separadas**: cada persona entra con email y contraseña o con Google, y solo ve su propio ropero.
 
@@ -87,6 +88,7 @@ Storage: users/{uid}/garments/{id}.jpg y {id}_thumb.jpg
 - Las reglas (`firestore.rules`, `storage.rules`) permiten que cada usuario lea y escriba **solo** dentro de su propio `users/{uid}`.
 - Las fotos se achican en el celular antes de subirlas: la foto queda en 1400 px y la miniatura en 512 px. Así suben rápido y ocupan poco.
 - **Day Style** es una Cloud Function (`functions/src/index.ts`). Lee tus prendas, le manda a Claude las miniaturas con sus descripciones y la ocasión (más el clima, si está activado) y recibe JSON estructurado con 2 o 3 outfits. Se queda solo con IDs de prendas que existen y guarda el resultado en el historial.
+- **Fondo blanco** usa [@imgly/background-removal](https://github.com/imgly/background-removal-js) (licencia AGPL-3.0). La primera vez el teléfono descarga el modelo (~40 MB) desde el CDN de IMG.LY y queda en caché. Para prendas ya subidas, la función `garmentImage` entrega la foto original para reprocesarla.
 - **tagGarment** etiqueta cada prenda nueva con un modelo rápido (`claude-haiku-5-5`, configurable con `ANTHROPIC_TAG_MODEL`). Cuesta menos de un centavo por prenda.
 - **shouldBuy** (¿Lo compro?) recibe la foto achicada en el teléfono, la compara con el ropero y no la guarda.
 - **Shopping** es otra Cloud Function (`shoppingSuggestions`) que recibe el mismo ropero más tus preferencias y devuelve una lectura del ropero y de 3 a 6 prendas para comprar, cada una con las prendas tuyas con las que combina.

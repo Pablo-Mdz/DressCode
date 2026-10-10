@@ -3,7 +3,7 @@ import { translate } from "./i18n";
 
 // fotos más livianas = subidas rápidas, menos espacio en Supabase y menos costo de IA.
 
-async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
+async function loadBitmap(file: Blob): Promise<ImageBitmap | HTMLImageElement> {
   try {
     return await createImageBitmap(file, { imageOrientation: "from-image" });
   } catch {
@@ -50,6 +50,19 @@ export async function imageToBase64(file: File, maxSide = 1024): Promise<string>
   const jpeg = await toJpeg(bitmap, maxSide, 0.82);
   if ("close" in bitmap) bitmap.close();
   return blobToBase64(jpeg);
+}
+
+// Achica una imagen (para procesarla más rápido en el teléfono).
+export async function shrinkImage(file: Blob, maxSide: number): Promise<Blob> {
+  const bitmap = await loadBitmap(file);
+  const jpeg = await toJpeg(bitmap, maxSide, 0.9);
+  if ("close" in bitmap) bitmap.close();
+  return jpeg;
+}
+
+export function base64ToFile(base64: string, name = "prenda.jpg"): File {
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  return new File([bytes], name, { type: "image/jpeg" });
 }
 
 export async function prepareImages(file: File): Promise<{ full: Blob; thumb: Blob }> {

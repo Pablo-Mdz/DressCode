@@ -613,3 +613,26 @@ export const shouldBuy = onCall(CALL_OPTS, async (request) => {
     },
   };
 });
+
+// ─────────────────────────── Foto de una prenda ───────────────────────────
+// Devuelve la foto guardada en base64 para reprocesarla en el teléfono (quitar fondo)
+// sin tener que configurar CORS en el bucket.
+
+export const garmentImage = onCall({ timeoutSeconds: 60, memory: "256MiB" }, async (request) => {
+  const lang = pickLang(request.data?.lang);
+  const m = MESSAGES[lang];
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", m.unauthenticated);
+
+  const garmentId = String(request.data?.garmentId ?? "");
+  if (!/^[A-Za-z0-9]{10,40}$/.test(garmentId)) throw new HttpsError("invalid-argument", m.notFound);
+  const snap = await getFirestore().collection("users").doc(uid).collection("garments").doc(garmentId).get();
+  if (!snap.exists) throw new HttpsError("not-found", m.notFound);
+
+  try {
+    const [buf] = await getStorage().bucket().file(String(snap.get("image_path"))).download();
+    return { image: buf.toString("base64") };
+  } catch {
+    throw new HttpsError("not-found", m.notFound);
+  }
+});

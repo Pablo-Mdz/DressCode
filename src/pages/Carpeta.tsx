@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   deleteFolder,
   deleteGarment,
+  replaceGarmentImage,
   listFolders,
   listGarments,
   renameFolder,
@@ -10,7 +11,9 @@ import {
   uploadGarment,
 } from "../lib/wardrobe";
 import type { Folder, Formality, Garment, GarmentTags, Season } from "../lib/types";
-import { tagGarment } from "../lib/ai";
+import { fetchGarmentImage, tagGarment } from "../lib/ai";
+import { whiteBackground, type BgProgress } from "../lib/background";
+import { base64ToFile } from "../lib/image";
 import Sheet from "../components/Sheet";
 import ConfirmSheet from "../components/ConfirmSheet";
 import PageHeader from "../components/PageHeader";
@@ -18,6 +21,8 @@ import Silhouette from "../components/Silhouette";
 import { useI18n, type MessageKey } from "../lib/i18n";
 import TagPills from "../components/TagPills";
 import { BackIcon, CameraIcon, EditIcon, GalleryIcon, PlusIcon, SparkleIcon, TrashIcon } from "../components/Icons";
+
+const WHITE_BG_KEY = "dresscode.whiteBackground";
 
 export default function Carpeta() {
   const { folderId = "" } = useParams();
@@ -196,6 +201,7 @@ export default function Carpeta() {
           folders={folders}
           onClose={() => setSelected(null)}
           onChanged={(g, moved) => {
+            if (!moved) setSelected(g);
             setGarments((prev) => (moved ? prev!.filter((x) => x.id !== g.id) : prev!.map((x) => (x.id === g.id ? g : x))));
           }}
           onDeleted={(g) => setGarments((prev) => prev!.filter((x) => x.id !== g.id))}
@@ -267,8 +273,19 @@ function AddGarmentSheet({
   const { t } = useI18n();
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [original, setOriginal] = useState<File | null>(null);
+  const [processed, setProcessed] = useState<File | null>(null);
+  const [useWhite, setUseWhite] = useState(() => {
+    try {
+      return localStorage.getItem(WHITE_BG_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  });
+  const [bgStatus, setBgStatus] = useState<BgProgress | null>(null);
+  const [bgError, setBgError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const file = useWhite && processed ? processed : original;
   const [description, setDescription] = useState("");
   const [target, setTarget] = useState(folderId);
   const [busy, setBusy] = useState(false);
@@ -285,8 +302,33 @@ function AddGarmentSheet({
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(WHITE_BG_KEY, useWhite ? "1" : "0");
+    } catch {
+      /* almacenamiento no disponible */
+    }
+  }, [useWhite]);
+
+  // Recorte del fondo en el teléfono apenas se elige la foto.
+  useEffect(() => {
+    if (!original || !useWhite || processed || bgError) return;
+    let cancelled = false;
+    setBgStatus({ phase: "process", percent: 0 });
+    whiteBackground(original, (p) => !cancelled && setBgStatus(p))
+      .then((f) => !cancelled && setProcessed(f))
+      .catch(() => !cancelled && setBgError(t("bg.error")))
+      .finally(() => !cancelled && setBgStatus(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [original, useWhite, processed, bgError, t]);
+
   const reset = () => {
-    setFile(null);
+    setOriginal(null);
+    setProcessed(null);
+    setBgError(null);
+    setBgStatus(null);
     setDescription("");
     setError(null);
   };
@@ -315,7 +357,11 @@ function AddGarmentSheet({
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) setFile(f);
+    if (f) {
+      setOriginal(f);
+      setProcessed(null);
+      setBgError(null);
+    }
     e.target.value = "";
   };
 
@@ -324,13 +370,22 @@ function AddGarmentSheet({
       open={open}
       onClose={close}
       title={t("garment.new")}
-      action={{ label: busy ? t("common.saving") : t("common.save"), onClick: save, disabled: busy || !file }}
+      action={{
+        label: busy ? t("common.saving") : t("common.save"),
+        onClick: save,
+        disabled: busy || !file || bgStatus !== null,
+      }}
     >
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={onPick} />
       <input ref={galleryRef} type="file" accept="image/*" hidden onChange={onPick} />
 
       <div className="photo photo-preview">
         {preview ? <img src={preview} alt={t("garment.preview")} /> : <Silhouette kind="camisa" width={150} strokeWidth={1} />}
+        {bgStatus && (
+          <span className="photo-badge">
+            {bgStatus.phase === "download" ? t("bg.downloading", { n: bgStatus.percent }) : t("bg.processing")}
+          </span>
+        )}
       </div>
 
       <div className="two-buttons">
@@ -341,6 +396,25 @@ function AddGarmentSheet({
           <GalleryIcon width={20} height={20} /> {t("garment.gallery")}
         </button>
       </div>
+
+      <div className="weather-row">
+        <SparkleIcon />
+        <div className="weather-text">
+          <span>{t("bg.toggle")}</span>
+          <span className="muted">{t("bg.toggleHint")}</span>
+        </div>
+        <button
+          type="button"
+          className={`switch ${useWhite ? "on" : ""}`}
+          aria-pressed={useWhite}
+          aria-label={t("bg.toggle")}
+          onClick={() => setUseWhite(!useWhite)}
+          disabled={busy}
+        >
+          <span />
+        </button>
+      </div>
+      {bgError && <p className="msg msg-info">{bgError}</p>}
 
       <GarmentFields
         description={description}
@@ -375,6 +449,24 @@ function GarmentSheet({
 }) {
   const { t } = useI18n();
   const [description, setDescription] = useState(garment.description ?? "");
+
+  const { lang } = useI18n();
+  const [bgBusy, setBgBusy] = useState<BgProgress | null>(null);
+
+  // Quita el fondo de una prenda ya guardada: baja la foto, la recorta en el teléfono y la reemplaza.
+  async function removeBg() {
+    setBgBusy({ phase: "process", percent: 0 });
+    setError(null);
+    try {
+      const original = base64ToFile(await fetchGarmentImage(garment.id, lang));
+      const clean = await whiteBackground(original, setBgBusy);
+      onChanged(await replaceGarmentImage(garment, clean), false);
+    } catch {
+      setError(t("bg.errorExisting"));
+    } finally {
+      setBgBusy(null);
+    }
+  }
 
   // Si la IA completó la descripción mientras el panel estaba abierto, mostrarla.
   useEffect(() => {
@@ -414,6 +506,14 @@ function GarmentSheet({
         <div className="photo photo-preview">
           <img src={garment.image_url} alt={garment.description ?? t("garment.alt")} />
         </div>
+        <button className="btn btn-outline btn-block" onClick={removeBg} disabled={bgBusy !== null || busy}>
+          <SparkleIcon width={18} height={18} />
+          {bgBusy
+            ? bgBusy.phase === "download"
+              ? t("bg.downloading", { n: bgBusy.percent })
+              : t("bg.processing")
+            : t("bg.button")}
+        </button>
         {garment.tags ? (
           <TagPills tags={garment.tags} />
         ) : (
