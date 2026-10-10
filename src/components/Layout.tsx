@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { BagIcon, ClockIcon, HangerIcon, SparkleIcon } from "./Icons";
+import { CoupleProvider } from "../context/CoupleContext";
+import InviteBanner from "./InviteBanner";
 import { useI18n, type MessageKey } from "../lib/i18n";
 
 const TABS: { to: string; label: MessageKey; Icon: typeof HangerIcon }[] = [
@@ -12,18 +14,21 @@ const TABS: { to: string; label: MessageKey; Icon: typeof HangerIcon }[] = [
 export default function Layout() {
   const { t } = useI18n();
   return (
-    <div className="shell">
-      <main className="content">
-        <Outlet />
-      </main>
-      <nav className="tabbar" aria-label={t("tab.sections")}>
-        {TABS.map(({ to, label, Icon }) => (
-          <NavLink key={to} to={to} className="tab">
-            <Icon />
-            <span>{t(label)}</span>
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+    <CoupleProvider>
+      <div className="shell">
+        <main className="content">
+          <InviteBanner />
+          <Outlet />
+        </main>
+        <nav className="tabbar" aria-label={t("tab.sections")}>
+          {TABS.map(({ to, label, Icon }) => (
+            <NavLink key={to} to={to} className="tab">
+              <Icon />
+              <span>{t(label)}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </CoupleProvider>
   );
 }

@@ -44,6 +44,8 @@ const MESSAGES = {
     needTwo: "Subí al menos un par de prendas a tu Ropero para que pueda armarte un look.",
     needThree: "Subí al menos 3 prendas a tu Ropero para que pueda ver qué te falta.",
     needOne: "Subí al menos una prenda a tu Ropero para que pueda compararla.",
+    noCouple: "Todavía no estás vinculado con tu pareja. Invitala desde Cuenta.",
+    partnerEmpty: "Tu pareja todavía no subió prendas a su Ropero.",
     badImage: "No pude leer la foto. Probá con otra.",
     notFound: "No encontré esa prenda.",
     noCombination: "No encontré una combinación posible. Probá de nuevo.",
@@ -61,6 +63,8 @@ const MESSAGES = {
     needTwo: "Add at least a couple of items to your Wardrobe so I can put a look together.",
     needThree: "Add at least 3 items to your Wardrobe so I can see what's missing.",
     needOne: "Add at least one item to your Wardrobe so I can compare.",
+    noCouple: "You're not linked with your partner yet. Invite them from Account.",
+    partnerEmpty: "Your partner hasn't added any items to their Wardrobe yet.",
     badImage: "I couldn't read the photo. Try another one.",
     notFound: "I couldn't find that item.",
     noCombination: "I couldn't find a possible combination. Please try again.",
@@ -85,9 +89,15 @@ type GarmentTags = {
 type Wardrobe = {
   ids: Set<string>;
   blocks: Anthropic.Beta.BetaContentBlockParam[];
+  info: Map<string, { thumb_url: string; description: string }>;
 };
 
-async function loadWardrobe(uid: string, minGarments: number, emptyMessage: string): Promise<Wardrobe> {
+async function loadWardrobe(
+  uid: string,
+  minGarments: number,
+  emptyMessage: string,
+  heading?: string,
+): Promise<Wardrobe> {
   const userRef = getFirestore().collection("users").doc(uid);
   const [garmentsSnap, foldersSnap] = await Promise.all([
     userRef.collection("garments").orderBy("created_at").limit(MAX_GARMENTS).get(),
@@ -102,6 +112,7 @@ async function loadWardrobe(uid: string, minGarments: number, emptyMessage: stri
     description: ((d.get("description") as string | null) ?? "").trim(),
     thumbPath: d.get("thumb_path") as string,
     tags: d.get("tags") as GarmentTags | undefined,
+    thumbUrl: String(d.get("thumb_url") ?? ""),
   }));
 
   // Miniaturas en base64: bytes estables, así el prefijo del ropero se puede cachear.
@@ -119,7 +130,7 @@ async function loadWardrobe(uid: string, minGarments: number, emptyMessage: stri
   );
 
   const blocks: Anthropic.Beta.BetaContentBlockParam[] = [
-    { type: "text", text: `Este es mi ropero (${garments.length} prendas):` },
+    { type: "text", text: heading ?? `Este es mi ropero (${garments.length} prendas):` },
   ];
   garments.forEach((g, i) => {
     blocks.push({
@@ -137,7 +148,11 @@ async function loadWardrobe(uid: string, minGarments: number, emptyMessage: stri
   const last = blocks[blocks.length - 1];
   if (last.type === "image" || last.type === "text") last.cache_control = { type: "ephemeral" };
 
-  return { ids: new Set(garments.map((g) => g.id)), blocks };
+  return {
+    ids: new Set(garments.map((g) => g.id)),
+    blocks,
+    info: new Map(garments.map((g) => [g.id, { thumb_url: g.thumbUrl, description: g.description }])),
+  };
 }
 
 async function askClaude<T>(
@@ -635,4 +650,122 @@ export const garmentImage = onCall({ timeoutSeconds: 60, memory: "256MiB" }, asy
   } catch {
     throw new HttpsError("not-found", m.notFound);
   }
+});
+
+// ─────────────────────────── Looks en pareja ───────────────────────────
+
+type CouplePick = { title: string; a_ids: string[]; b_ids: string[]; explanation: string; tip: string };
+
+const COUPLE_PROMPT = `Sos el estilista personal de DressCode: gusto parisino, minimalista y preciso.
+Tu tarea: proponer 2 o 3 looks COORDINADOS para una pareja que va junta a una ocasión, usando EXCLUSIVAMENTE prendas de sus roperos.
+
+Reglas:
+- Recibís dos roperos: el de la persona A (quien pide) y el de la persona B. Cada prenda tiene ID, carpeta, descripción, etiquetas y foto.
+- a_ids: solo IDs del ropero de A. b_ids: solo IDs del ropero de B. Copiados exactamente; nunca mezcles roperos ni inventes prendas.
+- Cada look debe ser completo para cada persona (arriba, abajo y calzado; abrigo o accesorios si suman o el clima lo pide).
+- Coordinados, no uniformados: colores que dialoguen (misma paleta, un color en común, contraste armónico), mismo nivel de formalidad, ninguno opaca al otro.
+- Las alternativas tienen que ser realmente diferentes entre sí.
+- Si hay datos del clima, tenelos en cuenta.
+- title: nombre corto y evocador del look en pareja (máx. 4 palabras).
+- explanation: 2-3 oraciones sobre por qué funcionan juntos para la ocasión. Podés nombrar a cada persona.
+- tip: un consejo concreto de styling para la pareja.`;
+
+const COUPLE_SCHEMA = {
+  type: "object",
+  properties: {
+    outfits: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          a_ids: { type: "array", items: { type: "string" } },
+          b_ids: { type: "array", items: { type: "string" } },
+          explanation: { type: "string" },
+          tip: { type: "string" },
+        },
+        required: ["title", "a_ids", "b_ids", "explanation", "tip"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["outfits"],
+  additionalProperties: false,
+};
+
+export const coupleStyle = onCall(CALL_OPTS, async (request) => {
+  const lang = pickLang(request.data?.lang);
+  const m = MESSAGES[lang];
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", m.unauthenticated);
+
+  const prompt = String(request.data?.prompt ?? "").trim();
+  if (prompt.length < 3) throw new HttpsError("invalid-argument", m.promptShort);
+  if (prompt.length > 1000) throw new HttpsError("invalid-argument", m.promptLong);
+  const weather: Weather | null = request.data?.weather ?? null;
+
+  const db = getFirestore();
+  const coupleSnap = await db.collection("couples").where("members", "array-contains", uid).limit(1).get();
+  if (coupleSnap.empty) throw new HttpsError("failed-precondition", m.noCouple);
+  const couple = coupleSnap.docs[0];
+  const members = couple.get("members") as string[];
+  const partner = members.find((x) => x !== uid)!;
+  const names = (couple.get("names") as Record<string, string> | undefined) ?? {};
+  const nameA = names[uid] || "A";
+  const nameB = names[partner] || "B";
+
+  const [wa, wb] = await Promise.all([
+    loadWardrobe(uid, 2, m.needTwo, `Ropero de la persona A (${nameA}):`),
+    loadWardrobe(partner, 2, m.partnerEmpty, `Ropero de la persona B (${nameB}):`),
+  ]);
+
+  const parsed = await askClaude<{ outfits: CouplePick[] }>(
+    `${COUPLE_PROMPT}\n- ${VOICE[lang]}`,
+    [
+      ...wa.blocks,
+      ...wb.blocks,
+      {
+        type: "text",
+        text: `Persona A: ${nameA}. Persona B: ${nameB}.\nOcasión: ${prompt}${describeWeather(weather)}\n\nArmanos 2 o 3 looks coordinados.`,
+      },
+    ],
+    COUPLE_SCHEMA,
+    lang,
+  );
+
+  const suggestions = parsed.outfits
+    .map((o) => ({
+      title: o.title,
+      explanation: o.explanation,
+      tip: o.tip,
+      picks: {
+        [uid]: [...new Set(o.a_ids)].filter((id) => wa.ids.has(id)),
+        [partner]: [...new Set(o.b_ids)].filter((id) => wb.ids.has(id)),
+      },
+    }))
+    .filter((o) => o.picks[uid].length > 0 && o.picks[partner].length > 0)
+    .slice(0, 3);
+  if (suggestions.length === 0) throw new HttpsError("unavailable", m.noCombination);
+
+  // Guardamos una copia de las miniaturas usadas: cada uno ve las prendas del otro solo dentro del look.
+  const garments: Record<string, { thumb_url: string; description: string; owner: string }> = {};
+  for (const s of suggestions) {
+    for (const [owner, ids] of Object.entries(s.picks)) {
+      const info = owner === uid ? wa.info : wb.info;
+      for (const id of ids) garments[id] = { ...info.get(id)!, owner };
+    }
+  }
+
+  const outfit = {
+    prompt,
+    weather,
+    requested_by: uid,
+    names: { [uid]: nameA, [partner]: nameB },
+    suggestions,
+    garments,
+    chosen_index: null,
+    created_at: Date.now(),
+  };
+  const ref = await couple.ref.collection("outfits").add(outfit);
+  return { outfit: { id: ref.id, couple_id: couple.id, ...outfit } };
 });

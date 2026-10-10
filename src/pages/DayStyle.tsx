@@ -2,10 +2,14 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { chooseOutfit, loadOutfitGarments, requestDayStyle } from "../lib/outfits";
 import { fetchWeather } from "../lib/weather";
-import type { Garment, Outfit, Weather } from "../lib/types";
+import type { CoupleOutfit, Garment, Outfit, Weather } from "../lib/types";
+import { useCouple } from "../context/CoupleContext";
+import { useAuth } from "../context/AuthContext";
+import { chooseCoupleOutfit, requestCoupleStyle } from "../lib/couple";
+import CoupleOutfitCard from "../components/CoupleOutfitCard";
 import OutfitCard from "../components/OutfitCard";
 import PageHeader from "../components/PageHeader";
-import { SparkleIcon, SunIcon } from "../components/Icons";
+import { HeartsIcon, SparkleIcon, SunIcon } from "../components/Icons";
 import { useI18n, type MessageKey } from "../lib/i18n";
 
 const IDEAS = ["dinner", "office", "wedding", "market", "date"] as const;
@@ -16,6 +20,10 @@ const WEATHER_KEY = "dresscode.useWeather";
 
 export default function DayStyle() {
   const { t, lang } = useI18n();
+  const { user } = useAuth();
+  const { couple, partnerName } = useCouple();
+  const [forBoth, setForBoth] = useState(false);
+  const [coupleOutfit, setCoupleOutfit] = useState<CoupleOutfit | null>(null);
   const [prompt, setPrompt] = useState("");
   const [useWeather, setUseWeather] = useState(() => {
     try {
@@ -54,8 +62,8 @@ export default function DayStyle() {
   }, [busy]);
 
   useEffect(() => {
-    if (outfit || busy) resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [outfit, busy]);
+    if (outfit || coupleOutfit || busy) resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [outfit, coupleOutfit, busy]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -63,7 +71,12 @@ export default function DayStyle() {
     setBusy(true);
     setError(null);
     setOutfit(null);
+    setCoupleOutfit(null);
     try {
+      if (couple && forBoth) {
+        setCoupleOutfit(await requestCoupleStyle(prompt.trim(), useWeather ? weather : null, lang));
+        return;
+      }
       const o = await requestDayStyle(prompt.trim(), useWeather ? weather : null, lang);
       setGarments(await loadOutfitGarments([o]));
       setOutfit(o);
@@ -71,6 +84,17 @@ export default function DayStyle() {
       setError(err instanceof Error ? err.message : t("common.genericError"));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function chooseCouple(index: number) {
+    if (!coupleOutfit || !couple) return;
+    const next = coupleOutfit.chosen_index === index ? null : index;
+    setCoupleOutfit({ ...coupleOutfit, chosen_index: next });
+    try {
+      await chooseCoupleOutfit(couple, coupleOutfit.id, next);
+    } catch {
+      /* se puede reintentar desde el historial */
     }
   }
 
@@ -153,6 +177,26 @@ export default function DayStyle() {
           </button>
         </div>
 
+        {couple && (
+          <div className="weather-row">
+            <HeartsIcon />
+            <div className="weather-text">
+              <span>{t("couple.toggle")}</span>
+              <span className="muted">{t("couple.toggleHint", { name: partnerName })}</span>
+            </div>
+            <button
+              type="button"
+              className={`switch ${forBoth ? "on" : ""}`}
+              aria-pressed={forBoth}
+              aria-label={t("couple.toggle")}
+              onClick={() => setForBoth(!forBoth)}
+              disabled={busy}
+            >
+              <span />
+            </button>
+          </div>
+        )}
+
         <button className="btn btn-primary btn-block btn-lg" disabled={busy || prompt.trim().length < 3}>
           <SparkleIcon width={20} height={20} /> {busy ? t("day.submitting") : t("day.submit")}
         </button>
@@ -179,6 +223,26 @@ export default function DayStyle() {
             </>
           )}
         </p>
+      )}
+
+      {coupleOutfit && user && (
+        <div className="looks">
+          <header className="looks-head">
+            <span className="eyebrow">{t("day.resultsFor")}</span>
+            <p className="looks-prompt">“{coupleOutfit.prompt}”</p>
+          </header>
+          {coupleOutfit.suggestions.map((_, i) => (
+            <CoupleOutfitCard
+              key={i}
+              outfit={coupleOutfit}
+              index={i}
+              myUid={user.uid}
+              chosen={coupleOutfit.chosen_index === i}
+              onChoose={() => chooseCouple(i)}
+              delay={i * 120}
+            />
+          ))}
+        </div>
       )}
 
       {outfit && (

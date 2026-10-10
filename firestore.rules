@@ -1,10 +1,65 @@
 rules_version = '2';
 
-// Cada usuario solo puede leer y escribir dentro de /users/{su uid}/...
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Cada usuario solo puede leer y escribir dentro de /users/{su uid}/...
     match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ───── Pareja ─────
+
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    // Invitación para vincular roperos. El ID del documento es el email (en minúsculas) de quien es invitado.
+    // La ve quien la mandó y quien la recibe (con el email verificado).
+    match /invites/{email} {
+      allow read: if request.auth != null
+        && (resource.data.from_uid == request.auth.uid
+            || (request.auth.token.email_verified == true && myEmail() == email));
+      allow create: if request.auth != null
+        && email == email.lower()
+        && email != myEmail()
+        && request.resource.data.from_uid == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.from_uid == request.auth.uid
+        && request.resource.data.from_uid == request.auth.uid;
+      allow delete: if request.auth != null
+        && (resource.data.from_uid == request.auth.uid
+            || (request.auth.token.email_verified == true && myEmail() == email));
+    }
+
+    // Vínculo de pareja. ID = los dos uid ordenados, unidos por "_".
+    // Solo lo crea quien acepta una invitación dirigida a su email verificado.
+    match /couples/{coupleId} {
+      function invite() {
+        return get(/databases/$(database)/documents/invites/$(myEmail())).data;
+      }
+
+      allow read, delete: if request.auth != null && request.auth.uid in resource.data.members;
+      allow create: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.resource.data.members.size() == 2
+        && request.auth.uid in request.resource.data.members
+        && request.resource.data.members[0] < request.resource.data.members[1]
+        && coupleId == request.resource.data.members[0] + '_' + request.resource.data.members[1]
+        && invite().from_uid in request.resource.data.members
+        && invite().from_uid != request.auth.uid;
+      allow update: if false;
+
+      // Looks en pareja: los escribe la Cloud Function; los dos pueden verlos, elegir uno o borrarlos.
+      match /outfits/{outfitId} {
+        function isMember() {
+          return request.auth != null
+            && request.auth.uid in get(/databases/$(database)/documents/couples/$(coupleId)).data.members;
+        }
+        allow read, delete: if isMember();
+        allow update: if isMember()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['chosen_index']);
+      }
     }
   }
 }
