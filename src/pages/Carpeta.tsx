@@ -48,8 +48,9 @@ export default function Carpeta() {
         const { tags, description } = await tagGarment(g.id, lang);
         setGarments((prev) => prev?.map((x) => (x.id === g.id ? { ...x, tags, description } : x)) ?? prev);
         setSelected((prev) => (prev?.id === g.id ? { ...prev, tags, description } : prev));
-      } catch {
-        /* sin etiquetas: se puede reintentar desde el detalle de la prenda */
+      } catch (err) {
+        // Se muestra el motivo; la prenda queda sin etiquetas y se puede reintentar desde su detalle.
+        setError(err instanceof Error ? err.message : t("tags.error"));
       } finally {
         setTagging((prev) => {
           const next = new Set(prev);

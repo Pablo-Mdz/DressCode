@@ -35,13 +35,16 @@ export default function Ropero() {
   // Etiqueta con IA, de a una, las prendas subidas antes de que existiera el etiquetado.
   async function tagAll() {
     const pending = garments.filter((g) => !g.tags);
+    setError(null);
     setProgress({ done: 0, total: pending.length });
     for (let i = 0; i < pending.length; i++) {
       try {
         const { tags, description } = await tagGarment(pending[i].id, lang);
         setGarments((prev) => prev.map((x) => (x.id === pending[i].id ? { ...x, tags, description } : x)));
-      } catch {
-        /* se saltea y sigue con la próxima */
+      } catch (err) {
+        // Si falla una, casi seguro fallan todas (función sin publicar, sin crédito…): se corta y se avisa.
+        setError(err instanceof Error ? err.message : t("tags.error"));
+        break;
       }
       setProgress({ done: i + 1, total: pending.length });
     }
