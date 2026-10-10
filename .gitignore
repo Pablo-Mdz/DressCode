@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.local
+.netlify
+supabase/.temp
+.DS_Store
+functions/lib
+functions/node_modules
+.firebase
+*-debug.log
+*.tsbuildinfo
