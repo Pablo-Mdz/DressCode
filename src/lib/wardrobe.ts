@@ -1,0 +1,133 @@
+import {
+  collection,
+  deleteDoc,
+  doc,
+  documentId,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+  writeBatch,
+} from "firebase/firestore";
+import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { auth, db, storage } from "./firebase";
+import { prepareImages } from "./image";
+import type { Folder, Garment } from "./types";
+
+// Estructura en Firestore:
+//   users/{uid}                    → { initialized: true }
+//   users/{uid}/folders/{id}       → Folder
+//   users/{uid}/garments/{id}      → Garment
+//   users/{uid}/outfits/{id}       → Outfit (lo escribe la Cloud Function)
+
+const DEFAULT_FOLDERS = ["Camisas", "Remeras", "Pantalones", "Calzado", "Camperas", "Accesorios", "Otros"];
+
+function uid(): string {
+  const id = auth.currentUser?.uid;
+  if (!id) throw new Error("Sesión expirada. Volvé a entrar.");
+  return id;
+}
+
+export const userCol = (name: "folders" | "garments" | "outfits") => collection(db, "users", uid(), name);
+
+// La primera vez que el usuario entra le creamos las carpetas por defecto.
+export async function ensureDefaultFolders(userId: string) {
+  const userRef = doc(db, "users", userId);
+  const snap = await getDoc(userRef);
+  if (snap.exists()) return;
+  const batch = writeBatch(db);
+  const now = Date.now();
+  DEFAULT_FOLDERS.forEach((name, position) => {
+    batch.set(doc(collection(db, "users", userId, "folders")), { name, position, created_at: now + position });
+  });
+  batch.set(userRef, { initialized: true, created_at: now });
+  await batch.commit();
+}
+
+export async function listFolders(): Promise<Folder[]> {
+  const snap = await getDocs(query(userCol("folders"), orderBy("position")));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Folder);
+}
+
+export async function listGarments(folderId?: string): Promise<Garment[]> {
+  const q = folderId ? query(userCol("garments"), where("folder_id", "==", folderId)) : query(userCol("garments"));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Garment).sort((a, b) => b.created_at - a.created_at);
+}
+
+export async function getGarmentsByIds(ids: string[]): Promise<Garment[]> {
+  const out: Garment[] = [];
+  // Firestore permite hasta 30 valores por consulta "in".
+  for (let i = 0; i < ids.length; i += 30) {
+    const snap = await getDocs(query(userCol("garments"), where(documentId(), "in", ids.slice(i, i + 30))));
+    out.push(...snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Garment));
+  }
+  return out;
+}
+
+export async function createFolder(name: string, position: number): Promise<Folder> {
+  const ref = doc(userCol("folders"));
+  const folder = { name: name.trim(), position, created_at: Date.now() };
+  await setDoc(ref, folder);
+  return { id: ref.id, ...folder };
+}
+
+export async function renameFolder(id: string, name: string) {
+  await updateDoc(doc(userCol("folders"), id), { name: name.trim() });
+}
+
+export async function deleteFolder(id: string) {
+  const garments = await listGarments(id);
+  const batch = writeBatch(db);
+  garments.forEach((g) => batch.delete(doc(userCol("garments"), g.id)));
+  batch.delete(doc(userCol("folders"), id));
+  await batch.commit();
+  await removeFiles(garments.flatMap((g) => [g.image_path, g.thumb_path]));
+}
+
+export async function uploadGarment(file: File, folderId: string, description: string): Promise<Garment> {
+  const userId = uid();
+  const { full, thumb } = await prepareImages(file);
+  const garmentRef = doc(userCol("garments"));
+  const image_path = `users/${userId}/garments/${garmentRef.id}.jpg`;
+  const thumb_path = `users/${userId}/garments/${garmentRef.id}_thumb.jpg`;
+
+  try {
+    const meta = { contentType: "image/jpeg", cacheControl: "private, max-age=31536000" };
+    const [a, b] = await Promise.all([
+      uploadBytes(ref(storage, image_path), full, meta),
+      uploadBytes(ref(storage, thumb_path), thumb, meta),
+    ]);
+    const [image_url, thumb_url] = await Promise.all([getDownloadURL(a.ref), getDownloadURL(b.ref)]);
+    const garment = {
+      folder_id: folderId,
+      image_path,
+      thumb_path,
+      image_url,
+      thumb_url,
+      description: description.trim() || null,
+      created_at: Date.now(),
+    };
+    await setDoc(garmentRef, garment);
+    return { id: garmentRef.id, ...garment };
+  } catch (err) {
+    await removeFiles([image_path, thumb_path]);
+    throw err;
+  }
+}
+
+export async function updateGarment(id: string, patch: { description?: string | null; folder_id?: string }) {
+  await updateDoc(doc(userCol("garments"), id), patch);
+}
+
+export async function deleteGarment(g: Garment) {
+  await deleteDoc(doc(userCol("garments"), g.id));
+  await removeFiles([g.image_path, g.thumb_path]);
+}
+
+async function removeFiles(paths: string[]) {
+  await Promise.all(paths.map((p) => deleteObject(ref(storage, p)).catch(() => undefined)));
+}
