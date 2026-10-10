@@ -8,6 +8,7 @@ Tu ropero personal y tu estilista con IA. Es una PWA (se instala en el celular d
 - **¿Lo compro?** (dentro de Shopping): sacale una foto a una prenda en la tienda y la IA te dice si conviene, con qué prendas tuyas combina y si ya tenés algo parecido.
 - **Etiquetado automático**: al subir una prenda, la IA detecta tipo, color, temporada y formalidad (y completa la descripción si está vacía). Permite filtrar cada carpeta y mejora los looks.
 - **Fondo blanco**: al subir una foto, el fondo se quita en el propio teléfono (gratis, sin servidores) y la prenda queda centrada sobre blanco. También se puede aplicar a prendas ya subidas.
+- **Looks en pareja**: desde Cuenta invitás a tu pareja por email; cuando acepta, en Day Style aparece "Para los dos" y la IA arma looks coordinados con los dos roperos. Cada uno sigue viendo solo sus propias prendas; el historial de looks en pareja es compartido.
 - **Historial**: todos los looks que pediste, con la opción de marcar el que elegiste.
 - **Cuentas separadas**: cada persona entra con email y contraseña o con Google, y solo ve su propio ropero.
 
@@ -82,12 +83,15 @@ users/{uid}/garments/{id}         ← prendas (rutas y URLs de las fotos + descr
 users/{uid}/outfits/{id}          ← historial de Day Style
 users/{uid}/meta/shopping         ← preferencias y últimas sugerencias de Shopping
 users/{uid}/shoppingList/{id}     ← mi lista de compras
+invites/{email}                   ← invitación para vincular roperos
+couples/{uidA_uidB}               ← vínculo de pareja (y sus looks en /outfits)
 Storage: users/{uid}/garments/{id}.jpg y {id}_thumb.jpg
 ```
 
 - Las reglas (`firestore.rules`, `storage.rules`) permiten que cada usuario lea y escriba **solo** dentro de su propio `users/{uid}`.
 - Las fotos se achican en el celular antes de subirlas: la foto queda en 1400 px y la miniatura en 512 px. Así suben rápido y ocupan poco.
 - **Day Style** es una Cloud Function (`functions/src/index.ts`). Lee tus prendas, le manda a Claude las miniaturas con sus descripciones y la ocasión (más el clima, si está activado) y recibe JSON estructurado con 2 o 3 outfits. Se queda solo con IDs de prendas que existen y guarda el resultado en el historial.
+- **coupleStyle** verifica el vínculo, carga los dos roperos y guarda en el look solo las miniaturas usadas: nadie puede leer el ropero del otro desde la app (lo garantizan las reglas de Firestore). Para aceptar una invitación hace falta el email verificado.
 - **Fondo blanco** usa [@imgly/background-removal](https://github.com/imgly/background-removal-js) (licencia AGPL-3.0). La primera vez el teléfono descarga el modelo (~40 MB) desde el CDN de IMG.LY y queda en caché. Para prendas ya subidas, la función `garmentImage` entrega la foto original para reprocesarla.
 - **tagGarment** etiqueta cada prenda nueva con un modelo rápido (`claude-haiku-5-5`, configurable con `ANTHROPIC_TAG_MODEL`). Cuesta menos de un centavo por prenda.
 - **shouldBuy** (¿Lo compro?) recibe la foto achicada en el teléfono, la compara con el ropero y no la guarda.

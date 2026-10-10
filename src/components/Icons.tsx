@@ -41,6 +41,14 @@ export const ClockIcon = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+export const HeartsIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <circle cx="8.5" cy="9" r="3" />
+    <circle cx="15.5" cy="9" r="3" />
+    <path d="M3.5 19c.6-3 2.6-4.8 5-4.8s4.4 1.8 5 4.8M10.5 19c.6-3 2.6-4.8 5-4.8s4.4 1.8 5 4.8" />
+  </svg>
+);
+
 export const PlusIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
     <path d="M12 5v14M5 12h14" />

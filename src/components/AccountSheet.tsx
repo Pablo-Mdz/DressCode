@@ -3,6 +3,7 @@ import { auth } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
 import { LANGS, useI18n } from "../lib/i18n";
 import Sheet from "./Sheet";
+import PartnerSection from "./PartnerSection";
 
 export default function AccountSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ export default function AccountSheet({ open, onClose }: { open: boolean; onClose
         <LanguageSwitch lang={lang} setLang={setLang} label={t("account.language")} />
         <span className="label">{t("account.languageHint")}</span>
       </div>
+
+      <PartnerSection />
 
       <button className="btn btn-outline btn-block" onClick={() => signOut(auth)}>
         {t("account.signOut")}

@@ -108,3 +108,37 @@ export type BuyResult = {
   new_looks: number;
   tip: string;
 };
+
+export type Couple = {
+  id: string;
+  members: string[];
+  names: Record<string, string>;
+  created_at: number;
+};
+
+export type Invite = {
+  email: string;
+  from_uid: string;
+  from_name: string;
+  from_email: string;
+  created_at: number;
+};
+
+export type CoupleSuggestion = {
+  title: string;
+  explanation: string;
+  tip: string;
+  picks: Record<string, string[]>; // uid → prendas de esa persona
+};
+
+export type CoupleOutfit = {
+  id: string;
+  prompt: string;
+  weather: Weather | null;
+  requested_by: string;
+  names: Record<string, string>;
+  suggestions: CoupleSuggestion[];
+  garments: Record<string, { thumb_url: string; description: string; owner: string }>;
+  chosen_index: number | null;
+  created_at: number;
+};
