@@ -37,8 +37,20 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: "/index.html",
+        // El motor de recorte de fondo (~24 MB) no se instala con la app:
+        // se descarga y se cachea recién la primera vez que se usa.
+        globIgnores: ["**/ort*"],
         // Supabase (datos, fotos firmadas, funciones) nunca se cachea.
         runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.includes("/assets/ort") || url.hostname === "staticimgly.com",
+            handler: "CacheFirst",
+            options: {
+              cacheName: "background-removal",
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: ({ url }) => url.origin.includes("fonts.g"),
             handler: "CacheFirst",

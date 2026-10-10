@@ -123,6 +123,26 @@ export async function uploadGarment(file: File, folderId: string, description: s
   }
 }
 
+// Reemplaza la foto de una prenda (por ejemplo, con el fondo ya quitado).
+// Sube archivos nuevos (las reglas de Storage no permiten sobrescribir) y borra los viejos.
+export async function replaceGarmentImage(g: Garment, file: File): Promise<Garment> {
+  const userId = uid();
+  const { full, thumb } = await prepareImages(file);
+  const version = Date.now();
+  const image_path = `users/${userId}/garments/${g.id}_${version}.jpg`;
+  const thumb_path = `users/${userId}/garments/${g.id}_${version}_thumb.jpg`;
+  const meta = { contentType: "image/jpeg", cacheControl: "private, max-age=31536000" };
+  const [a, b] = await Promise.all([
+    uploadBytes(ref(storage, image_path), full, meta),
+    uploadBytes(ref(storage, thumb_path), thumb, meta),
+  ]);
+  const [image_url, thumb_url] = await Promise.all([getDownloadURL(a.ref), getDownloadURL(b.ref)]);
+  const patch = { image_path, thumb_path, image_url, thumb_url };
+  await updateDoc(doc(userCol("garments"), g.id), patch);
+  await removeFiles([g.image_path, g.thumb_path]);
+  return { ...g, ...patch };
+}
+
 export async function updateGarment(id: string, patch: { description?: string | null; folder_id?: string }) {
   await updateDoc(doc(userCol("garments"), id), patch);
 }

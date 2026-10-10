@@ -257,6 +257,15 @@ const es = {
   "buy.similar": "Ya tenés algo parecido",
   "buy.another": "Analizar otra",
   "buy.error": "No pude analizar la prenda. Probá de nuevo.",
+
+  // Fondo blanco
+  "bg.toggle": "Fondo blanco",
+  "bg.toggleHint": "Quita el fondo y centra la prenda",
+  "bg.downloading": "Preparando el recorte (solo la primera vez)… {n}%",
+  "bg.processing": "Quitando el fondo…",
+  "bg.button": "Quitar fondo",
+  "bg.error": "No pude quitar el fondo. Se guarda la foto original.",
+  "bg.errorExisting": "No pude quitar el fondo de esta foto.",
 };
 
 export type MessageKey = keyof typeof es;
@@ -503,6 +512,14 @@ const en: Record<MessageKey, string> = {
   "buy.similar": "You already have something similar",
   "buy.another": "Analyze another",
   "buy.error": "I couldn't analyze the item. Please try again.",
+
+  "bg.toggle": "White background",
+  "bg.toggleHint": "Removes the background and centers the item",
+  "bg.downloading": "Getting the cutout ready (first time only)… {n}%",
+  "bg.processing": "Removing the background…",
+  "bg.button": "Remove background",
+  "bg.error": "I couldn't remove the background. The original photo will be saved.",
+  "bg.errorExisting": "I couldn't remove the background from this photo.",
 };
 
 export type Lang = "es" | "en";
