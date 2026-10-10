@@ -30,7 +30,9 @@ const callBuy = httpsCallable<{ image: string; note: string; lang: Lang }, { res
 
 function friendly(err: unknown, fallback: string): Error {
   const message = err instanceof Error ? err.message : "";
-  return new Error(message && message.toLowerCase() !== "internal" ? message : fallback);
+  // "internal" / "not-found" llegan, por ejemplo, cuando la función no está publicada en Firebase.
+  const generic = !message || ["internal", "not-found", "not found"].includes(message.toLowerCase());
+  return new Error(generic ? `${fallback} (${translate("ai.unavailable")})` : message);
 }
 
 // Detecta tipo, color, temporada y formalidad de una prenda ya subida.
