@@ -24,9 +24,10 @@ import { BackIcon, CameraIcon, EditIcon, GalleryIcon, PlusIcon, SparkleIcon, Tra
 
 const WHITE_BG_KEY = "dresscode.whiteBackground";
 const MAX_BATCH = 20;
+const AUTO_FOLDER = "__auto"; // en la subida múltiple, la IA elige la carpeta de cada prenda
 
 // Foto elegida en una subida múltiple, mientras espera o se procesa.
-type PendingUpload = { key: string; url: string; folderId: string; status: "waiting" | "processing" | "error" };
+type PendingUpload = { key: string; url: string; folderId: string; status: "waiting" | "processing" | "sorting" | "error" };
 
 export default function Carpeta() {
   const { folderId = "" } = useParams();
@@ -44,6 +45,7 @@ export default function Carpeta() {
   const [season, setSeason] = useState<Season | null>(null);
   const [formality, setFormality] = useState<Formality | null>(null);
   const [uploads, setUploads] = useState<PendingUpload[]>([]);
+  const [sorted, setSorted] = useState<Record<string, number>>({}); // prendas que la IA ubicó, por carpeta
   const queue = useRef<Promise<void>>(Promise.resolve());
   const currentFolder = useRef(folderId);
   currentFolder.current = folderId;
@@ -72,13 +74,16 @@ export default function Carpeta() {
 
   // Subida múltiple: de a una (el recorte del fondo usa mucho el procesador), en segundo plano.
   // Cada prenda aparece en la grilla apenas se sube y la IA la etiqueta y describe.
+  // En modo automático se sube a esta carpeta y la IA la mueve a la que corresponde.
   const enqueue = useCallback(
     (files: File[], target: string, white: boolean) => {
+      const auto = target === AUTO_FOLDER;
+      if (auto) setSorted({});
       const items = files.map((file, i) => ({
         file,
         key: `${Date.now()}-${i}`,
         url: URL.createObjectURL(file),
-        folderId: target,
+        folderId: auto ? folderId : target,
       }));
       setUploads((prev) => [...prev, ...items.map(({ file: _f, ...u }) => ({ ...u, status: "waiting" as const }))]);
       const setStatus = (key: string, status: PendingUpload["status"]) =>
@@ -97,17 +102,36 @@ export default function Carpeta() {
               }
             }
             const g = await uploadGarment(file, item.folderId, "");
-            if (g.folder_id === currentFolder.current) setGarments((prev) => [g, ...(prev ?? [])]);
-            setUploads((prev) => prev.filter((u) => u.key !== item.key));
-            URL.revokeObjectURL(item.url);
-            autoTag(g);
+            const done = (final: Garment) => {
+              if (final.folder_id === currentFolder.current) setGarments((prev) => [final, ...(prev ?? [])]);
+              setUploads((prev) => prev.filter((u) => u.key !== item.key));
+              URL.revokeObjectURL(item.url);
+            };
+            if (!auto) {
+              done(g);
+              autoTag(g);
+              return;
+            }
+            // Sin esperar: la cola sigue con la próxima foto mientras la IA clasifica esta.
+            setStatus(item.key, "sorting");
+            tagGarment(g.id, lang, true)
+              .then(({ tags, description, folder_id }) => {
+                const final = { ...g, tags, description, folder_id: folder_id ?? g.folder_id };
+                setSorted((prev) => ({ ...prev, [final.folder_id]: (prev[final.folder_id] ?? 0) + 1 }));
+                done(final);
+              })
+              .catch((err) => {
+                // Queda en esta carpeta, sin etiquetas: se puede analizar y mover a mano.
+                setError(err instanceof Error ? err.message : t("tags.error"));
+                done(g);
+              });
           } catch {
             setStatus(item.key, "error");
           }
         });
       }
     },
-    [autoTag],
+    [autoTag, folderId, lang],
   );
 
   const uploading = uploads.filter((u) => u.status !== "error").length;
@@ -170,6 +194,14 @@ export default function Carpeta() {
       {!garments && !error && <div className="spinner" />}
 
       {uploading > 0 && <p className="msg msg-info">{t("batch.progress", { n: uploading })}</p>}
+      {uploading === 0 && Object.keys(sorted).length > 0 && (
+        <button className="msg msg-info sorted-summary" onClick={() => setSorted({})}>
+          {t("batch.sorted")}{" "}
+          {Object.entries(sorted)
+            .map(([id, n]) => `${folders.find((f) => f.id === id)?.name ?? "…"} ${n}`)
+            .join(" · ")}
+        </button>
+      )}
 
       {garments && garments.length === 0 && visibleUploads.length === 0 && (
         <div className="empty fade-in">
@@ -213,7 +245,15 @@ export default function Carpeta() {
               <div className="photo">
                 <img src={u.url} alt={t("garment.preview")} />
                 <span className={`photo-badge${u.status === "error" ? " error" : ""}`}>
-                  {t(u.status === "error" ? "batch.failed" : u.status === "processing" ? "batch.uploading" : "batch.waiting")}
+                  {t(
+                    u.status === "error"
+                      ? "batch.failed"
+                      : u.status === "sorting"
+                        ? "batch.sorting"
+                        : u.status === "processing"
+                          ? "batch.uploading"
+                          : "batch.waiting",
+                  )}
                 </span>
               </div>
             </button>
@@ -468,9 +508,11 @@ function AddGarmentSheet({
       setOriginal(null);
       setProcessed(null);
       setBatch(files.slice(0, MAX_BATCH).map((file) => ({ file, url: URL.createObjectURL(file) })));
+      setTarget(AUTO_FOLDER);
       setBatchCut(files.length > MAX_BATCH);
     } else if (f) {
       clearBatch();
+      setTarget((prev) => (prev === AUTO_FOLDER ? folderId : prev));
       setOriginal(f);
       setProcessed(null);
       setBgError(null);
@@ -558,6 +600,7 @@ function AddGarmentSheet({
           <label className="group-row">
             <span>{t("garment.folder")}</span>
             <select value={target} onChange={(e) => setTarget(e.target.value)}>
+              <option value={AUTO_FOLDER}>{t("batch.auto")}</option>
               {folders.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
