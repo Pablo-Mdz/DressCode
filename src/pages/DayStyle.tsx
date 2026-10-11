@@ -9,8 +9,9 @@ import { chooseCoupleOutfit, requestCoupleStyle } from "../lib/couple";
 import CoupleOutfitCard from "../components/CoupleOutfitCard";
 import OutfitCard from "../components/OutfitCard";
 import InspireSheet from "../components/InspireSheet";
+import PlanSheet from "../components/PlanSheet";
 import PageHeader from "../components/PageHeader";
-import { ChevronIcon, GalleryIcon, HeartsIcon, SparkleIcon, SunIcon } from "../components/Icons";
+import { ChevronIcon, GalleryIcon, HeartsIcon, SparkleIcon, SuitcaseIcon, SunIcon } from "../components/Icons";
 import { useI18n, type MessageKey } from "../lib/i18n";
 
 const IDEAS = ["dinner", "office", "wedding", "market", "date"] as const;
@@ -26,6 +27,7 @@ export default function DayStyle() {
   const [forBoth, setForBoth] = useState(false);
   const [coupleOutfit, setCoupleOutfit] = useState<CoupleOutfit | null>(null);
   const [inspireOpen, setInspireOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [useWeather, setUseWeather] = useState(() => {
     try {
@@ -215,6 +217,17 @@ export default function DayStyle() {
         <ChevronIcon width={18} height={18} className="chevron" />
       </button>
 
+      <button className="entry-card" onClick={() => setPlanOpen(true)}>
+        <span className="entry-icon">
+          <SuitcaseIcon width={22} height={22} />
+        </span>
+        <span className="entry-text">
+          <span className="serif-md">{t("plan.title")}</span>
+          <span className="muted">{t("plan.entry")}</span>
+        </span>
+        <ChevronIcon width={18} height={18} className="chevron" />
+      </button>
+
       <div ref={resultsRef} className="results-anchor" />
 
       {busy && (
@@ -284,6 +297,7 @@ export default function DayStyle() {
       )}
 
       <InspireSheet open={inspireOpen} onClose={() => setInspireOpen(false)} />
+      <PlanSheet open={planOpen} onClose={() => setPlanOpen(false)} />
     </section>
   );
 }

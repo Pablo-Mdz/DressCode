@@ -764,6 +764,114 @@ export const inspireLook = onCall(CALL_OPTS, async (request) => {
   return { outfit: { id: ref.id, ...outfit } };
 });
 
+// ─────────────────────────── Planificar semana o viaje ───────────────────────────
+
+type DayForecast = { date: string; description: string; min: number; max: number; rain: number };
+type PlanResult = { name: string; summary: string; days: Suggestion[]; packing_tips: string[] };
+
+const PLAN_PROMPT = `Sos el estilista personal de DressCode: gusto parisino, minimalista y preciso.
+Tu tarea: planificar un look por día usando EXCLUSIVAMENTE prendas del ropero del usuario.
+
+Reglas:
+- days: exactamente un outfit por día, en orden. En garment_ids poné solo IDs que existan en el ropero, copiados exactamente; nunca inventes prendas.
+- title: qué se hace ese día o el espíritu del look (máx. 4 palabras). explanation: 1-2 oraciones. tip: un consejo corto y concreto.
+- Si es un VIAJE: armá una valija liviana y versátil. Repetí prendas básicas entre días (pantalones, calzado, abrigo) y variá las de arriba y los accesorios; todo tiene que combinar entre sí. Pensá en el traslado: el primer y el último día, ropa cómoda (y lo más voluminoso puesto).
+- Si es una SEMANA en casa: no repitas el mismo look y evitá usar la misma prenda de arriba dos días seguidos.
+- Respetá los planes que cuenta el usuario (cenas, reuniones, caminatas) en los días que correspondan; si no dice cuándo, distribuilos con criterio.
+- Si hay pronóstico por día, usalo. Si no, tené en cuenta el clima típico del destino y la época.
+- name: nombre corto y evocador del plan (máx. 4 palabras).
+- summary: 2 oraciones sobre la estrategia (paleta, prendas clave).
+- packing_tips: de 2 a 4 consejos concretos para armar la valija o organizar la semana.`;
+
+const PLAN_SCHEMA = {
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    summary: { type: "string" },
+    days: DAY_STYLE_SCHEMA.properties.outfits,
+    packing_tips: { type: "array", items: { type: "string" } },
+  },
+  required: ["name", "summary", "days", "packing_tips"],
+  additionalProperties: false,
+};
+
+const PLAN_LABEL: Record<Lang, { trip: string; week: string }> = {
+  es: { trip: "Viaje", week: "Semana" },
+  en: { trip: "Trip", week: "Week" },
+};
+
+export const planWeek = onCall(CALL_OPTS, async (request) => {
+  const lang = pickLang(request.data?.lang);
+  const m = MESSAGES[lang];
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", m.unauthenticated);
+
+  const mode: "trip" | "week" = request.data?.mode === "week" ? "week" : "trip";
+  const destination = String(request.data?.destination ?? "").trim().slice(0, 80);
+  const start = /^\d{4}-\d{2}-\d{2}$/.test(String(request.data?.start)) ? String(request.data.start) : null;
+  const days = Math.max(1, Math.min(14, Math.round(Number(request.data?.days) || 0)));
+  const notes = String(request.data?.notes ?? "").trim().slice(0, 1000);
+  const forecast: DayForecast[] = Array.isArray(request.data?.forecast)
+    ? (request.data.forecast as DayForecast[]).slice(0, 14).map((f) => ({
+        date: String(f.date).slice(0, 10),
+        description: String(f.description).slice(0, 40),
+        min: Math.round(Number(f.min)),
+        max: Math.round(Number(f.max)),
+        rain: Math.round(Number(f.rain) || 0),
+      }))
+    : [];
+
+  const wardrobe = await loadWardrobe(uid, 2, m.needTwo);
+
+  const context = [
+    mode === "trip" ? `Es un VIAJE${destination ? ` a ${destination}` : ""}.` : "Es una SEMANA en casa (trabajo y vida normal).",
+    `Cantidad de días: ${days}.`,
+    start ? `Primer día: ${start}.` : "",
+    notes ? `Planes y comentarios: ${notes}` : "",
+    forecast.length
+      ? `Pronóstico por día:\n${forecast.map((f) => `${f.date}: ${f.description}, ${f.min}-${f.max}°C, lluvia ${f.rain}%`).join("\n")}`
+      : "Sin pronóstico: usá el clima típico.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const parsed = await askClaude<PlanResult>(
+    `${PLAN_PROMPT}\n- ${VOICE[lang]}`,
+    [...wardrobe.blocks, { type: "text", text: `${context}\n\nArmame el plan: un look por día.` }],
+    PLAN_SCHEMA,
+    lang,
+  );
+
+  const suggestions = parsed.days
+    .slice(0, days)
+    .map((o) => ({ ...o, garment_ids: [...new Set(o.garment_ids)].filter((id) => wardrobe.ids.has(id)) }))
+    .filter((o) => o.garment_ids.length > 0);
+  if (suggestions.length === 0) throw new HttpsError("unavailable", m.noCombination);
+
+  const name = String(parsed.name).slice(0, 60);
+  const label = PLAN_LABEL[lang][mode];
+  const outfit = {
+    prompt: `${label}: ${name}`,
+    weather: null,
+    suggestions,
+    chosen_index: null,
+    plan: {
+      mode,
+      name,
+      destination,
+      start,
+      days,
+      notes,
+      summary: parsed.summary,
+      packing_tips: parsed.packing_tips.slice(0, 4),
+      forecast,
+    },
+    created_at: Date.now(),
+  };
+  const ref = await getFirestore().collection("users").doc(uid).collection("outfits").add(outfit);
+  return { outfit: { id: ref.id, ...outfit } };
+});
+
 // ─────────────────────────── Foto de una prenda ───────────────────────────
 // Devuelve la foto guardada en base64 para reprocesarla en el teléfono (quitar fondo)
 // sin tener que configurar CORS en el bucket.

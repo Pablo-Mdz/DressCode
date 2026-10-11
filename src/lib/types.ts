@@ -52,6 +52,21 @@ export type Outfit = {
   chosen_index: number | null;
   created_at: number;
   inspiration?: Inspiration; // looks recreados desde una foto
+  plan?: Plan; // semana o viaje: un look por día
+};
+
+export type DayForecast = { date: string; description: string; min: number; max: number; rain: number };
+
+export type Plan = {
+  mode: "trip" | "week";
+  name: string;
+  destination: string;
+  start: string | null; // AAAA-MM-DD
+  days: number;
+  notes: string;
+  summary: string;
+  packing_tips: string[];
+  forecast: DayForecast[];
 };
 
 export type Inspiration = {
