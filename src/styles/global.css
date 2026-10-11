@@ -1762,3 +1762,38 @@ textarea::placeholder {
   width: 100%;
   text-align: left;
 }
+
+/* ───────────── Inspiración ───────────── */
+
+.match-high {
+  background: var(--ink);
+  color: #fff;
+}
+
+.match-partial,
+.match-low {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.pair-row .grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.round-add {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line, #e5e5e5);
+  color: var(--ink);
+}
+
+.round-add.done {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}

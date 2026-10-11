@@ -2,7 +2,7 @@ import { httpsCallable } from "firebase/functions";
 import { functions } from "./firebase";
 import { imageToBase64 } from "./image";
 import { translate, type Lang } from "./i18n";
-import type { BuyResult, GarmentTags } from "./types";
+import type { BuyResult, GarmentTags, Outfit } from "./types";
 
 const callTag = httpsCallable<
   { garmentId: string; lang: Lang; sortFolder?: boolean },
@@ -46,6 +46,21 @@ export async function tagGarment(garmentId: string, lang: Lang, sortFolder = fal
     return data;
   } catch (err) {
     throw friendly(err, translate("tags.error"));
+  }
+}
+
+const callInspire = httpsCallable<{ image: string; note: string; lang: Lang }, { outfit: Outfit }>(functions, "inspireLook", {
+  timeout: 300_000,
+});
+
+// Inspiración: recrea con el ropero el look de una foto. Queda guardado en el historial.
+export async function inspireLook(file: File, note: string, lang: Lang): Promise<Outfit> {
+  const image = await imageToBase64(file);
+  try {
+    const { data } = await callInspire({ image, note, lang });
+    return data.outfit;
+  } catch (err) {
+    throw friendly(err, translate("insp.error"));
   }
 }
 

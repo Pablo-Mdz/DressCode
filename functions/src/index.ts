@@ -651,6 +651,119 @@ export const shouldBuy = onCall(CALL_OPTS, async (request) => {
   };
 });
 
+// ─────────────────────────── Inspiración desde una foto ───────────────────────────
+
+type InspireMissing = { name: string; kind: string; color_name: string; color_hex: string; material: string; why: string };
+type InspireResult = {
+  name: string;
+  reading: string;
+  match: "high" | "partial" | "low";
+  outfits: Suggestion[];
+  missing: InspireMissing[];
+};
+
+const INSPIRE_PROMPT = `Sos el estilista personal de DressCode: gusto parisino, minimalista y preciso.
+El usuario te manda una foto de un look que le gusta (Instagram, Pinterest, una revista, alguien en la calle). Tu tarea: recrear ese look con SU ropero.
+
+Reglas:
+- Mirá la foto de inspiración (última imagen) y detectá qué la define: siluetas, paleta de colores, capas, texturas, nivel de formalidad, accesorios clave.
+- Ignorá a la persona (cara, cuerpo, edad): fijate solo en la ropa y el estilo.
+- name: nombre corto y evocador del look de la foto (máx. 4 palabras).
+- reading: 2-3 oraciones sobre qué hace que ese look funcione.
+- outfits: 1 o 2 recreaciones con prendas del ropero. La primera, la más fiel; la segunda (opcional), una variante más fácil o más personal. En garment_ids poné solo IDs que existan en el ropero, copiados exactamente; nunca inventes prendas.
+  - title: nombre corto (máx. 4 palabras). explanation: 2-3 oraciones sobre qué captura de la foto y qué cambia. tip: un consejo concreto de styling para acercarse al original (cómo arremangar, meter la camisa, qué accesorio sumar).
+- match: "high" si el ropero permite una versión muy parecida, "partial" si captura la idea con diferencias visibles, "low" si solo se acerca en el espíritu.
+- missing: de 0 a 3 prendas que le faltan para lograr el look (las que más acercan al original). Para cada una: name corto, kind de la lista permitida, color_name, color_hex de 6 dígitos con #, material probable y why (una oración). Vacío si no hace falta nada.
+- Si el usuario agrega un comentario (ocasión, qué le gusta de la foto), tenelo en cuenta.
+- match y kind son valores técnicos: usá exactamente los valores permitidos.`;
+
+const INSPIRE_SCHEMA = {
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    reading: { type: "string" },
+    match: { type: "string", enum: ["high", "partial", "low"] },
+    outfits: DAY_STYLE_SCHEMA.properties.outfits,
+    missing: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          kind: { type: "string", enum: KINDS },
+          color_name: { type: "string" },
+          color_hex: { type: "string" },
+          material: { type: "string" },
+          why: { type: "string" },
+        },
+        required: ["name", "kind", "color_name", "color_hex", "material", "why"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["name", "reading", "match", "outfits", "missing"],
+  additionalProperties: false,
+};
+
+const INSPIRE_LABEL: Record<Lang, string> = { es: "Inspiración", en: "Inspiration" };
+
+export const inspireLook = onCall(CALL_OPTS, async (request) => {
+  const lang = pickLang(request.data?.lang);
+  const m = MESSAGES[lang];
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", m.unauthenticated);
+
+  const image = String(request.data?.image ?? "");
+  // JPEG en base64, ya achicado en el teléfono.
+  if (!/^[A-Za-z0-9+/=]+$/.test(image) || image.length < 1000 || image.length > 4_000_000) {
+    throw new HttpsError("invalid-argument", m.badImage);
+  }
+  const note = String(request.data?.note ?? "").trim().slice(0, 400);
+
+  const wardrobe = await loadWardrobe(uid, 2, m.needTwo);
+
+  const parsed = await askClaude<InspireResult>(
+    `${INSPIRE_PROMPT}\n- ${VOICE[lang]}`,
+    [
+      ...wardrobe.blocks,
+      { type: "text", text: "Este es el look que me inspira:" },
+      { type: "image", source: { type: "base64", media_type: "image/jpeg", data: image } },
+      { type: "text", text: `${note ? `Comentario: ${note}\n` : ""}¿Cómo lo recreo con mi ropa?` },
+    ],
+    INSPIRE_SCHEMA,
+    lang,
+  );
+
+  const suggestions = parsed.outfits
+    .map((o) => ({ ...o, garment_ids: [...new Set(o.garment_ids)].filter((id) => wardrobe.ids.has(id)) }))
+    .filter((o) => o.garment_ids.length > 0)
+    .slice(0, 2);
+  if (suggestions.length === 0) throw new HttpsError("unavailable", m.noCombination);
+
+  const inspiration = {
+    name: String(parsed.name).slice(0, 60),
+    reading: parsed.reading,
+    match: ["high", "partial", "low"].includes(parsed.match) ? parsed.match : "partial",
+    note,
+    missing: parsed.missing.slice(0, 3).map((x) => ({
+      ...x,
+      kind: KINDS.includes(x.kind) ? x.kind : "accesorio",
+      color_hex: /^#[0-9a-fA-F]{6}$/.test(x.color_hex) ? x.color_hex : "#D9D9D6",
+    })),
+  };
+  // Se guarda en el historial como un look más (la foto de inspiración no se guarda).
+  const outfit = {
+    prompt: `${INSPIRE_LABEL[lang]}: ${inspiration.name}`,
+    weather: null,
+    suggestions,
+    chosen_index: null,
+    inspiration,
+    created_at: Date.now(),
+  };
+  const ref = await getFirestore().collection("users").doc(uid).collection("outfits").add(outfit);
+  return { outfit: { id: ref.id, ...outfit } };
+});
+
 // ─────────────────────────── Foto de una prenda ───────────────────────────
 // Devuelve la foto guardada en base64 para reprocesarla en el teléfono (quitar fondo)
 // sin tener que configurar CORS en el bucket.

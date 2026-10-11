@@ -51,6 +51,15 @@ export type Outfit = {
   suggestions: Suggestion[];
   chosen_index: number | null;
   created_at: number;
+  inspiration?: Inspiration; // looks recreados desde una foto
+};
+
+export type Inspiration = {
+  name: string;
+  reading: string;
+  match: "high" | "partial" | "low";
+  note: string;
+  missing: { name: string; kind: GarmentKind; color_name: string; color_hex: string; material: string; why: string }[];
 };
 
 export type GarmentKind =
