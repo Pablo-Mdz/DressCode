@@ -207,8 +207,10 @@ const es = {
   "opt.Económico": "Económico",
   "opt.Medio": "Medio",
   "opt.Inversión": "Inversión",
-  "opt.Otoño-invierno": "Invierno",
-  "opt.Primavera-verano": "Verano",
+  "opt.Primavera": "Primavera",
+  "opt.Verano": "Verano",
+  "opt.Otoño": "Otoño",
+  "opt.Invierno": "Invierno",
   "opt.Todo el año": "Todo el año",
 
   // Etiquetas
@@ -492,8 +494,10 @@ const en: Record<MessageKey, string> = {
   "opt.Económico": "Affordable",
   "opt.Medio": "Mid-range",
   "opt.Inversión": "Investment",
-  "opt.Otoño-invierno": "Winter",
-  "opt.Primavera-verano": "Summer",
+  "opt.Primavera": "Spring",
+  "opt.Verano": "Summer",
+  "opt.Otoño": "Autumn",
+  "opt.Invierno": "Winter",
   "opt.Todo el año": "All year",
 
   "tags.analyzing": "Analyzing…",
