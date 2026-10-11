@@ -1756,3 +1756,9 @@ textarea::placeholder {
 .garment-card.pending:disabled {
   opacity: 1;
 }
+
+.sorted-summary {
+  display: block;
+  width: 100%;
+  text-align: left;
+}

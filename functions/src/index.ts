@@ -472,14 +472,34 @@ export const tagGarment = onCall(
       throw new HttpsError("not-found", m.notFound);
     }
 
+    // Subida múltiple: además de etiquetar, la IA elige la carpeta entre las del usuario.
+    let folders: { id: string; name: string }[] = [];
+    if (request.data?.sortFolder === true) {
+      const fs = await getFirestore().collection("users").doc(uid).collection("folders").limit(60).get();
+      folders = fs.docs.map((d) => ({ id: d.id, name: String(d.get("name") ?? "").slice(0, 40) }));
+    }
+    const sorting = folders.length > 1;
+    const schema = sorting
+      ? {
+          ...TAG_SCHEMA,
+          properties: { ...TAG_SCHEMA.properties, folder_id: { type: "string", enum: folders.map((f) => f.id) } },
+          required: [...TAG_SCHEMA.required, "folder_id"],
+        }
+      : TAG_SCHEMA;
+    const folderPrompt = sorting
+      ? `\n- folder_id: la carpeta del usuario donde guardar esta prenda. Elegí por el tipo de prenda según el nombre de la carpeta; si ninguna encaja, usá la más general (ej: "Otros"). Carpetas (id: nombre):\n${folders
+          .map((f) => `${f.id}: ${f.name}`)
+          .join("\n")}`
+      : "";
+
     const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
     let response: Anthropic.Message;
     try {
       response = await anthropic.messages.create({
         model: TAG_MODEL,
         max_tokens: 2000,
-        output_config: { effort: "low", format: { type: "json_schema", schema: TAG_SCHEMA } },
-        system: `${TAG_PROMPT}\n${VOICE[lang]} (color_name y description en ese idioma).`,
+        output_config: { effort: "low", format: { type: "json_schema", schema } },
+        system: `${TAG_PROMPT}${folderPrompt}\n${VOICE[lang]} (color_name y description en ese idioma).`,
         messages: [
           {
             role: "user",
@@ -500,7 +520,7 @@ export const tagGarment = onCall(
     }
 
     const text = response.content.find((b) => b.type === "text");
-    let parsed: GarmentTags & { description: string };
+    let parsed: GarmentTags & { description: string; folder_id?: string };
     try {
       parsed = JSON.parse(text && text.type === "text" ? text.text : "");
     } catch {
@@ -517,8 +537,10 @@ export const tagGarment = onCall(
     const current = ((snap.get("description") as string | null) ?? "").trim();
     const description = current || String(parsed.description).trim().slice(0, 200) || null;
 
-    await ref.update({ tags, description });
-    return { tags, description };
+    const folder_id = sorting && folders.some((f) => f.id === parsed.folder_id) ? String(parsed.folder_id) : null;
+
+    await ref.update(folder_id ? { tags, description, folder_id } : { tags, description });
+    return { tags, description, folder_id: folder_id ?? (snap.get("folder_id") as string) };
   },
 );
 

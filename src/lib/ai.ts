@@ -4,7 +4,10 @@ import { imageToBase64 } from "./image";
 import { translate, type Lang } from "./i18n";
 import type { BuyResult, GarmentTags } from "./types";
 
-const callTag = httpsCallable<{ garmentId: string; lang: Lang }, { tags: GarmentTags; description: string | null }>(
+const callTag = httpsCallable<
+  { garmentId: string; lang: Lang; sortFolder?: boolean },
+  { tags: GarmentTags; description: string | null; folder_id?: string }
+>(
   functions,
   "tagGarment",
   { timeout: 60_000 },
@@ -36,9 +39,10 @@ function friendly(err: unknown, fallback: string): Error {
 }
 
 // Detecta tipo, color, temporada y formalidad de una prenda ya subida.
-export async function tagGarment(garmentId: string, lang: Lang) {
+// Con sortFolder, la IA además la mueve a la carpeta que corresponde.
+export async function tagGarment(garmentId: string, lang: Lang, sortFolder = false) {
   try {
-    const { data } = await callTag({ garmentId, lang });
+    const { data } = await callTag({ garmentId, lang, sortFolder });
     return data;
   } catch (err) {
     throw friendly(err, translate("tags.error"));
