@@ -8,8 +8,9 @@ import { useAuth } from "../context/AuthContext";
 import { chooseCoupleOutfit, requestCoupleStyle } from "../lib/couple";
 import CoupleOutfitCard from "../components/CoupleOutfitCard";
 import OutfitCard from "../components/OutfitCard";
+import InspireSheet from "../components/InspireSheet";
 import PageHeader from "../components/PageHeader";
-import { HeartsIcon, SparkleIcon, SunIcon } from "../components/Icons";
+import { ChevronIcon, GalleryIcon, HeartsIcon, SparkleIcon, SunIcon } from "../components/Icons";
 import { useI18n, type MessageKey } from "../lib/i18n";
 
 const IDEAS = ["dinner", "office", "wedding", "market", "date"] as const;
@@ -24,6 +25,7 @@ export default function DayStyle() {
   const { couple, partnerName } = useCouple();
   const [forBoth, setForBoth] = useState(false);
   const [coupleOutfit, setCoupleOutfit] = useState<CoupleOutfit | null>(null);
+  const [inspireOpen, setInspireOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [useWeather, setUseWeather] = useState(() => {
     try {
@@ -202,6 +204,17 @@ export default function DayStyle() {
         </button>
       </form>
 
+      <button className="entry-card" onClick={() => setInspireOpen(true)}>
+        <span className="entry-icon">
+          <GalleryIcon width={22} height={22} />
+        </span>
+        <span className="entry-text">
+          <span className="serif-md">{t("insp.title")}</span>
+          <span className="muted">{t("insp.entry")}</span>
+        </span>
+        <ChevronIcon width={18} height={18} className="chevron" />
+      </button>
+
       <div ref={resultsRef} className="results-anchor" />
 
       {busy && (
@@ -269,6 +282,8 @@ export default function DayStyle() {
           ))}
         </div>
       )}
+
+      <InspireSheet open={inspireOpen} onClose={() => setInspireOpen(false)} />
     </section>
   );
 }
