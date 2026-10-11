@@ -34,6 +34,14 @@ export const BagIcon = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+export const SuitcaseIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}>
+    <rect x="4" y="7" width="16" height="13" rx="2" />
+    <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    <path d="M9 11v5M15 11v5" />
+  </svg>
+);
+
 export const ClockIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
     <circle cx="12" cy="12" r="8.5" />

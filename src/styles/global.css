@@ -1797,3 +1797,94 @@ textarea::placeholder {
   border-color: var(--ink);
   color: #fff;
 }
+
+/* ───────────── Planificar ───────────── */
+
+.group-row input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  text-align: right;
+  outline: none;
+}
+
+.group-row input[type="date"] {
+  flex: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stepper span {
+  min-width: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.packing-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.packing-piece {
+  aspect-ratio: 4 / 5;
+  border-radius: 10px;
+}
+
+.plan-tips {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.plan-day {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.plan-day .muted {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.plan .look-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}

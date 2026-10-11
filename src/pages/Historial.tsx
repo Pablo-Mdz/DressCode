@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { chooseOutfit, deleteOutfit, listOutfits, loadOutfitGarments } from "../lib/outfits";
 import type { Garment, Outfit } from "../lib/types";
 import OutfitCard from "../components/OutfitCard";
+import PlanView from "../components/PlanView";
 import PageHeader from "../components/PageHeader";
 import Sheet from "../components/Sheet";
 import ConfirmSheet from "../components/ConfirmSheet";
@@ -250,16 +251,20 @@ export default function Historial() {
               <span className="eyebrow">{when(open.created_at)}</span>
               <p className="looks-prompt">“{open.prompt}”</p>
             </header>
-            {open.suggestions.map((s, i) => (
-              <OutfitCard
-                key={i}
-                suggestion={s}
-                index={i}
-                garments={garments}
-                chosen={open.chosen_index === i}
-                onChoose={() => choose(open, i)}
-              />
-            ))}
+            {open.plan ? (
+              <PlanView outfit={open} plan={open.plan} garments={garments} />
+            ) : (
+              open.suggestions.map((s, i) => (
+                <OutfitCard
+                  key={i}
+                  suggestion={s}
+                  index={i}
+                  garments={garments}
+                  chosen={open.chosen_index === i}
+                  onChoose={() => choose(open, i)}
+                />
+              ))
+            )}
             <button className="btn btn-danger-text btn-block" onClick={() => setToDelete(open)}>
               {t("history.delete")}
             </button>

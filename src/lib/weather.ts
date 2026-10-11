@@ -1,4 +1,4 @@
-import type { Weather } from "./types";
+import type { DayForecast, Weather } from "./types";
 import type { Lang } from "./i18n";
 
 // Open-Meteo: gratis y sin API key.
@@ -73,6 +73,59 @@ function getPosition(): Promise<GeolocationPosition> {
       maximumAge: 30 * 60 * 1000,
     });
   });
+}
+
+// Pronóstico día por día para un viaje (o para casa si no hay destino).
+// Open-Meteo pronostica hasta 16 días: si el viaje es más adelante, devuelve null.
+export async function fetchForecast(
+  destination: string,
+  start: string,
+  days: number,
+  lang: Lang = "es",
+): Promise<DayForecast[] | null> {
+  const first = new Date(`${start}T12:00:00`);
+  const last = new Date(first.getTime() + (days - 1) * 86_400_000);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const limit = new Date(today.getTime() + 15 * 86_400_000);
+  if (first < today || first > limit) return null;
+  const end = last > limit ? limit : last;
+
+  let latitude: number;
+  let longitude: number;
+  if (destination.trim()) {
+    const q = new URLSearchParams({ name: destination.trim(), count: "1", language: lang });
+    const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${q}`).then((r) => (r.ok ? r.json() : null));
+    const place = geo?.results?.[0];
+    if (!place) return null;
+    latitude = place.latitude;
+    longitude = place.longitude;
+  } else {
+    const pos = await getPosition();
+    latitude = pos.coords.latitude;
+    longitude = pos.coords.longitude;
+  }
+
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const params = new URLSearchParams({
+    latitude: latitude.toFixed(3),
+    longitude: longitude.toFixed(3),
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+    timezone: "auto",
+    start_date: iso(first),
+    end_date: iso(end),
+  });
+  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+  if (!res.ok) return null;
+  const d = await res.json();
+  const codes = lang === "en" ? CODES_EN : CODES_ES;
+  return (d.daily.time as string[]).map((date, i) => ({
+    date,
+    description: codes[d.daily.weather_code[i]] ?? "",
+    min: Math.round(d.daily.temperature_2m_min[i]),
+    max: Math.round(d.daily.temperature_2m_max[i]),
+    rain: d.daily.precipitation_probability_max[i] ?? 0,
+  }));
 }
 
 export async function fetchWeather(lang: Lang = "es"): Promise<Weather> {

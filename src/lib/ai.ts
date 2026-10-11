@@ -2,7 +2,7 @@ import { httpsCallable } from "firebase/functions";
 import { functions } from "./firebase";
 import { imageToBase64 } from "./image";
 import { translate, type Lang } from "./i18n";
-import type { BuyResult, GarmentTags, Outfit } from "./types";
+import type { BuyResult, DayForecast, GarmentTags, Outfit } from "./types";
 
 const callTag = httpsCallable<
   { garmentId: string; lang: Lang; sortFolder?: boolean },
@@ -61,6 +61,29 @@ export async function inspireLook(file: File, note: string, lang: Lang): Promise
     return data.outfit;
   } catch (err) {
     throw friendly(err, translate("insp.error"));
+  }
+}
+
+type PlanRequest = {
+  mode: "trip" | "week";
+  destination: string;
+  start: string;
+  days: number;
+  notes: string;
+  forecast: DayForecast[] | null;
+};
+
+const callPlan = httpsCallable<PlanRequest & { lang: Lang }, { outfit: Outfit }>(functions, "planWeek", {
+  timeout: 300_000,
+});
+
+// Semana o viaje: un look por día y la valija. Queda guardado en el historial.
+export async function planWeek(req: PlanRequest, lang: Lang): Promise<Outfit> {
+  try {
+    const { data } = await callPlan({ ...req, lang });
+    return data.outfit;
+  } catch (err) {
+    throw friendly(err, translate("plan.error"));
   }
 }
 
