@@ -1700,3 +1700,59 @@ textarea::placeholder {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ───────────── Subida múltiple ───────────── */
+
+.batch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.batch-thumb {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--seg);
+}
+
+.batch-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.batch-thumb button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 22px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.batch-hint {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+.garment-card.pending .photo img {
+  opacity: 0.55;
+}
+
+.photo-badge.error {
+  animation: none;
+  color: var(--danger, #b42318);
+}
+
+.garment-card.pending:disabled {
+  opacity: 1;
+}

@@ -23,6 +23,10 @@ import TagPills from "../components/TagPills";
 import { BackIcon, CameraIcon, EditIcon, GalleryIcon, PlusIcon, SparkleIcon, TrashIcon } from "../components/Icons";
 
 const WHITE_BG_KEY = "dresscode.whiteBackground";
+const MAX_BATCH = 20;
+
+// Foto elegida en una subida múltiple, mientras espera o se procesa.
+type PendingUpload = { key: string; url: string; folderId: string; status: "waiting" | "processing" | "error" };
 
 export default function Carpeta() {
   const { folderId = "" } = useParams();
@@ -39,6 +43,10 @@ export default function Carpeta() {
   const [tagging, setTagging] = useState<Set<string>>(new Set());
   const [season, setSeason] = useState<Season | null>(null);
   const [formality, setFormality] = useState<Formality | null>(null);
+  const [uploads, setUploads] = useState<PendingUpload[]>([]);
+  const queue = useRef<Promise<void>>(Promise.resolve());
+  const currentFolder = useRef(folderId);
+  currentFolder.current = folderId;
 
   // Etiqueta una prenda con IA en segundo plano y actualiza la grilla al terminar.
   const autoTag = useCallback(
@@ -61,6 +69,57 @@ export default function Carpeta() {
     },
     [lang],
   );
+
+  // Subida múltiple: de a una (el recorte del fondo usa mucho el procesador), en segundo plano.
+  // Cada prenda aparece en la grilla apenas se sube y la IA la etiqueta y describe.
+  const enqueue = useCallback(
+    (files: File[], target: string, white: boolean) => {
+      const items = files.map((file, i) => ({
+        file,
+        key: `${Date.now()}-${i}`,
+        url: URL.createObjectURL(file),
+        folderId: target,
+      }));
+      setUploads((prev) => [...prev, ...items.map(({ file: _f, ...u }) => ({ ...u, status: "waiting" as const }))]);
+      const setStatus = (key: string, status: PendingUpload["status"]) =>
+        setUploads((prev) => prev.map((u) => (u.key === key ? { ...u, status } : u)));
+
+      for (const item of items) {
+        queue.current = queue.current.then(async () => {
+          setStatus(item.key, "processing");
+          try {
+            let file = item.file;
+            if (white) {
+              try {
+                file = await whiteBackground(item.file);
+              } catch {
+                /* se sube la foto original */
+              }
+            }
+            const g = await uploadGarment(file, item.folderId, "");
+            if (g.folder_id === currentFolder.current) setGarments((prev) => [g, ...(prev ?? [])]);
+            setUploads((prev) => prev.filter((u) => u.key !== item.key));
+            URL.revokeObjectURL(item.url);
+            autoTag(g);
+          } catch {
+            setStatus(item.key, "error");
+          }
+        });
+      }
+    },
+    [autoTag],
+  );
+
+  const uploading = uploads.filter((u) => u.status !== "error").length;
+  const visibleUploads = uploads.filter((u) => u.folderId === folderId);
+
+  // Avisar antes de cerrar la app con fotos todavía en cola.
+  useEffect(() => {
+    if (!uploading) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [uploading]);
 
   const folder = folders.find((f) => f.id === folderId);
 
@@ -110,7 +169,9 @@ export default function Carpeta() {
       {error && <p className="msg msg-error">{error}</p>}
       {!garments && !error && <div className="spinner" />}
 
-      {garments && garments.length === 0 && (
+      {uploading > 0 && <p className="msg msg-info">{t("batch.progress", { n: uploading })}</p>}
+
+      {garments && garments.length === 0 && visibleUploads.length === 0 && (
         <div className="empty fade-in">
           <Silhouette kind="camisa" width={64} />
           <p className="empty-title">{t("folder.emptyTitle")}</p>
@@ -137,8 +198,26 @@ export default function Carpeta() {
         </div>
       )}
 
-      {garments && garments.length > 0 && (
+      {garments && (garments.length > 0 || visibleUploads.length > 0) && (
         <div className="garment-grid">
+          {visibleUploads.map((u) => (
+            <button
+              key={u.key}
+              className="garment-card pending"
+              disabled={u.status !== "error"}
+              onClick={() => {
+                URL.revokeObjectURL(u.url);
+                setUploads((prev) => prev.filter((x) => x.key !== u.key));
+              }}
+            >
+              <div className="photo">
+                <img src={u.url} alt={t("garment.preview")} />
+                <span className={`photo-badge${u.status === "error" ? " error" : ""}`}>
+                  {t(u.status === "error" ? "batch.failed" : u.status === "processing" ? "batch.uploading" : "batch.waiting")}
+                </span>
+              </div>
+            </button>
+          ))}
           {garments.filter((g) => matches(g.tags, season, formality)).map((g, i) => (
             <button
               key={g.id}
@@ -169,6 +248,7 @@ export default function Carpeta() {
           if (g.folder_id === folderId) setGarments((prev) => [g, ...(prev ?? [])]);
           autoTag(g);
         }}
+        onBatch={enqueue}
       />
 
       <RenameSheet
@@ -264,12 +344,14 @@ function AddGarmentSheet({
   folders,
   onClose,
   onAdded,
+  onBatch,
 }: {
   open: boolean;
   folderId: string;
   folders: Folder[];
   onClose: () => void;
   onAdded: (g: Garment) => void;
+  onBatch: (files: File[], folderId: string, whiteBackground: boolean) => void;
 }) {
   const { t } = useI18n();
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -286,6 +368,8 @@ function AddGarmentSheet({
   const [bgStatus, setBgStatus] = useState<BgProgress | null>(null);
   const [bgError, setBgError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [batch, setBatch] = useState<{ file: File; url: string }[]>([]);
+  const [batchCut, setBatchCut] = useState(false);
   const file = useWhite && processed ? processed : original;
   const [description, setDescription] = useState("");
   const [target, setTarget] = useState(folderId);
@@ -325,7 +409,16 @@ function AddGarmentSheet({
     };
   }, [original, useWhite, processed, bgError, t]);
 
+  const clearBatch = () => {
+    setBatch((prev) => {
+      prev.forEach((b) => URL.revokeObjectURL(b.url));
+      return [];
+    });
+    setBatchCut(false);
+  };
+
   const reset = () => {
+    clearBatch();
     setOriginal(null);
     setProcessed(null);
     setBgError(null);
@@ -341,6 +434,17 @@ function AddGarmentSheet({
   };
 
   async function save() {
+    if (batch.length) {
+      // Las URLs de vista previa se liberan acá; la cola crea las suyas.
+      onBatch(
+        batch.map((b) => b.file),
+        target,
+        useWhite,
+      );
+      reset();
+      onClose();
+      return;
+    }
     if (!file) return;
     setBusy(true);
     setError(null);
@@ -357,8 +461,16 @@ function AddGarmentSheet({
   }
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) {
+    const files = Array.from(e.target.files ?? []);
+    const f = files[0];
+    if (files.length > 1) {
+      clearBatch();
+      setOriginal(null);
+      setProcessed(null);
+      setBatch(files.slice(0, MAX_BATCH).map((file) => ({ file, url: URL.createObjectURL(file) })));
+      setBatchCut(files.length > MAX_BATCH);
+    } else if (f) {
+      clearBatch();
       setOriginal(f);
       setProcessed(null);
       setBgError(null);
@@ -372,22 +484,46 @@ function AddGarmentSheet({
       onClose={close}
       title={t("garment.new")}
       action={{
-        label: busy ? t("common.saving") : t("common.save"),
+        label: busy ? t("common.saving") : batch.length ? t("batch.upload", { n: batch.length }) : t("common.save"),
         onClick: save,
-        disabled: busy || !file || bgStatus !== null,
+        disabled: busy || (!batch.length && (!file || bgStatus !== null)),
       }}
     >
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={onPick} />
-      <input ref={galleryRef} type="file" accept="image/*" hidden onChange={onPick} />
+      <input ref={galleryRef} type="file" accept="image/*" multiple hidden onChange={onPick} />
 
-      <div className="photo photo-preview">
-        {preview ? <img src={preview} alt={t("garment.preview")} /> : <Silhouette kind="camisa" width={150} strokeWidth={1} />}
-        {bgStatus && (
-          <span className="photo-badge">
-            {bgStatus.phase === "download" ? t("bg.downloading", { n: bgStatus.percent }) : t("bg.processing")}
-          </span>
-        )}
-      </div>
+      {batch.length > 0 ? (
+        <div className="stack-sm">
+          <div className="batch-grid">
+            {batch.map((b) => (
+              <div key={b.url} className="batch-thumb">
+                <img src={b.url} alt={t("garment.preview")} />
+                <button
+                  type="button"
+                  aria-label={t("batch.remove")}
+                  onClick={() => {
+                    URL.revokeObjectURL(b.url);
+                    setBatch((prev) => prev.filter((x) => x.url !== b.url));
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          {batchCut && <p className="msg msg-info">{t("batch.limit", { n: MAX_BATCH })}</p>}
+          <p className="batch-hint">{t("batch.hint")}</p>
+        </div>
+      ) : (
+        <div className="photo photo-preview">
+          {preview ? <img src={preview} alt={t("garment.preview")} /> : <Silhouette kind="camisa" width={150} strokeWidth={1} />}
+          {bgStatus && (
+            <span className="photo-badge">
+              {bgStatus.phase === "download" ? t("bg.downloading", { n: bgStatus.percent }) : t("bg.processing")}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="two-buttons">
         <button className="btn btn-primary" onClick={() => cameraRef.current?.click()} disabled={busy}>
@@ -417,13 +553,28 @@ function AddGarmentSheet({
       </div>
       {bgError && <p className="msg msg-info">{bgError}</p>}
 
-      <GarmentFields
-        description={description}
-        setDescription={setDescription}
-        folderId={target}
-        setFolderId={setTarget}
-        folders={folders}
-      />
+      {batch.length > 0 ? (
+        <div className="group">
+          <label className="group-row">
+            <span>{t("garment.folder")}</span>
+            <select value={target} onChange={(e) => setTarget(e.target.value)}>
+              {folders.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : (
+        <GarmentFields
+          description={description}
+          setDescription={setDescription}
+          folderId={target}
+          setFolderId={setTarget}
+          folders={folders}
+        />
+      )}
       {error && <p className="msg msg-error">{error}</p>}
     </Sheet>
   );
