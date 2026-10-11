@@ -477,6 +477,15 @@ code {
   font-size: 13px;
 }
 
+/* Muchas opciones (por ejemplo, las 4 estaciones + "Todo el año"): texto más chico y en dos líneas si hace falta. */
+.segmented.dense button {
+  height: auto;
+  min-height: 34px;
+  padding: 4px 2px;
+  font-size: 12px;
+  line-height: 1.15;
+}
+
 .segmented button[aria-pressed="true"] {
   background: #fff;
   color: var(--ink);

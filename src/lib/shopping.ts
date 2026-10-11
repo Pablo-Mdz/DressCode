@@ -11,7 +11,10 @@ import { translate, type Lang } from "./i18n";
 
 export const STYLE_OPTIONS = ["Formal", "Smart casual", "Casual", "Deportivo", "Minimalista", "Streetwear"];
 export const BUDGET_OPTIONS = ["Económico", "Medio", "Inversión"];
-export const SEASON_OPTIONS = ["Otoño-invierno", "Primavera-verano", "Todo el año"];
+export const SEASON_OPTIONS = ["Primavera", "Verano", "Otoño", "Invierno", "Todo el año"];
+
+// Valores de cuando había solo dos temporadas.
+const LEGACY_SEASONS: Record<string, string> = { "Otoño-invierno": "Invierno", "Primavera-verano": "Verano" };
 
 export const DEFAULT_PREFS: ShoppingPrefs = { styles: [], notes: "", budget: "Medio", season: "Todo el año" };
 
@@ -26,7 +29,10 @@ const listCol = () => userCol("shoppingList");
 export async function loadShopping(): Promise<{ prefs: ShoppingPrefs; result: ShoppingResult | null }> {
   const snap = await getDoc(metaRef());
   const data = snap.data() ?? {};
-  return { prefs: { ...DEFAULT_PREFS, ...(data.prefs ?? {}) }, result: (data.result as ShoppingResult) ?? null };
+  const prefs: ShoppingPrefs = { ...DEFAULT_PREFS, ...(data.prefs ?? {}) };
+  prefs.season = LEGACY_SEASONS[prefs.season] ?? prefs.season;
+  if (!SEASON_OPTIONS.includes(prefs.season)) prefs.season = DEFAULT_PREFS.season;
+  return { prefs, result: (data.result as ShoppingResult) ?? null };
 }
 
 const callShopping = httpsCallable<{ prefs: ShoppingPrefs; lang: Lang }, { prefs: ShoppingPrefs; result: ShoppingResult }>(

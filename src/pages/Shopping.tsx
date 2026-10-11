@@ -381,7 +381,7 @@ function Segmented({
   return (
     <div className="stack-sm">
       <span className="label">{label}</span>
-      <div className="segmented small" role="group" aria-label={label}>
+      <div className={`segmented small${options.length > 4 ? " dense" : ""}`} role="group" aria-label={label}>
         {options.map((o) => (
           <button key={o} type="button" aria-pressed={value === o} onClick={() => onChange(o)} disabled={disabled}>
             {t(`opt.${o}` as MessageKey)}

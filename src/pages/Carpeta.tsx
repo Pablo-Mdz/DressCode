@@ -481,6 +481,8 @@ function GarmentSheet({
   const dirty = description !== (garment.description ?? "") || folderId !== garment.folder_id;
 
   async function save() {
+    // Sin cambios (por ejemplo, la IA ya guardó la descripción y las etiquetas): solo cerrar.
+    if (!dirty) return onClose();
     setBusy(true);
     setError(null);
     try {
@@ -502,7 +504,7 @@ function GarmentSheet({
         onClose={onClose}
         title={t("garment.title")}
         cancelLabel={t("common.close")}
-        action={{ label: busy ? t("common.saving") : t("common.save"), onClick: save, disabled: busy || !dirty }}
+        action={{ label: busy ? t("common.saving") : t("common.save"), onClick: save, disabled: busy || tagging || bgBusy !== null }}
       >
         <div className="photo photo-preview">
           <img src={garment.image_url} alt={garment.description ?? t("garment.alt")} />

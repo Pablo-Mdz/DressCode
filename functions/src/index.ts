@@ -302,7 +302,7 @@ export const dayStyle = onCall(CALL_OPTS, async (request) => {
 
 const STYLES = ["Formal", "Smart casual", "Casual", "Deportivo", "Minimalista", "Streetwear"];
 const BUDGETS = ["Económico", "Medio", "Inversión"];
-const SEASONS = ["Otoño-invierno", "Primavera-verano", "Todo el año"];
+const SEASONS = ["Primavera", "Verano", "Otoño", "Invierno", "Todo el año"];
 const KINDS = ["remera", "camisa", "sweater", "campera", "pantalon", "pollera", "vestido", "zapato", "zapatilla", "bolso", "accesorio"];
 
 type ShoppingPrefs = { styles: string[]; notes: string; budget: string; season: string };
