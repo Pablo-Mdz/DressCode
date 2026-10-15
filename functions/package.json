@@ -1,5 +1,6 @@
 {
   "name": "dresscode-functions",
+  "license": "AGPL-3.0-only",
   "private": true,
   "main": "lib/index.js",
   "engines": {
