@@ -5,6 +5,8 @@ import { LANGS, useI18n } from "../lib/i18n";
 import Sheet from "./Sheet";
 import PartnerSection from "./PartnerSection";
 
+const SOURCE_URL = "https://github.com/Pablo-Mdz/DressCode";
+
 export default function AccountSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user } = useAuth();
   const { t, lang, setLang } = useI18n();
@@ -34,6 +36,14 @@ export default function AccountSheet({ open, onClose }: { open: boolean; onClose
       <button className="btn btn-outline btn-block" onClick={() => signOut(auth)}>
         {t("account.signOut")}
       </button>
+
+      {/* AGPL-3.0 §13: users of the hosted app must be able to get its source. */}
+      <p className="link" style={{ textAlign: "center" }}>
+        {t("account.sourceHint")}{" "}
+        <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">
+          <strong>{t("account.source")} ↗</strong>
+        </a>
+      </p>
     </Sheet>
   );
 }

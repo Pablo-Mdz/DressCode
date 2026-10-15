@@ -63,6 +63,8 @@ const es = {
   "account.signOut": "Cerrar sesión",
   "account.language": "Idioma",
   "account.languageHint": "La IA también te va a responder en este idioma.",
+  "account.source": "Código fuente",
+  "account.sourceHint": "DressCode es software libre (AGPL-3.0).",
 
   // Ropero
   "wardrobe.hello": "Bonjour, {name}",
@@ -406,6 +408,8 @@ const en: Record<MessageKey, string> = {
   "account.signOut": "Sign out",
   "account.language": "Language",
   "account.languageHint": "The AI stylist will also answer in this language.",
+  "account.source": "Source code",
+  "account.sourceHint": "DressCode is free software (AGPL-3.0).",
 
   "wardrobe.hello": "Bonjour, {name}",
   "wardrobe.title": "Wardrobe",
