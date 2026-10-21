@@ -1,7 +1,7 @@
 // Redimensiona y comprime en el teléfono antes de subir:
 import { translate } from "./i18n";
 
-// fotos más livianas = subidas rápidas, menos espacio en Supabase y menos costo de IA.
+// fotos más livianas = subidas rápidas, menos espacio en Storage y menos costo de IA.
 
 async function loadBitmap(file: Blob): Promise<ImageBitmap | HTMLImageElement> {
   try {
@@ -13,9 +13,24 @@ async function loadBitmap(file: Blob): Promise<ImageBitmap | HTMLImageElement> {
       img.src = url;
       await img.decode();
       return img;
+    } catch {
+      // Archivo que no es una imagen (PDF, texto renombrado…): mensaje claro en vez del error del navegador.
+      throw new Error(translate("garment.notImage"));
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+}
+
+// ¿El navegador puede leer este archivo como foto? Se usa al elegirlo, antes de mostrar nada.
+export async function isReadableImage(file: Blob): Promise<boolean> {
+  if (file.type && !file.type.startsWith("image/")) return false;
+  try {
+    const bitmap = await loadBitmap(file);
+    if ("close" in bitmap) bitmap.close();
+    return true;
+  } catch {
+    return false;
   }
 }
 

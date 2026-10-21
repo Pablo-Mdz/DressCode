@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { shouldBuy } from "../lib/ai";
+import { isReadableImage } from "../lib/image";
 import { useI18n, type MessageKey } from "../lib/i18n";
 import type { BuyResult, Garment, ShoppingItem } from "../lib/types";
 import Sheet from "./Sheet";
@@ -62,8 +63,15 @@ export default function BuySheet({
     onClose();
   };
 
-  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Solo fotos: un PDF o un archivo roto se rechaza antes de mandarlo a la IA.
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
+    e.target.value = "";
+    if (f && !(await isReadableImage(f))) {
+      setError(t("garment.notImage"));
+      return;
+    }
+    setError(null);
     if (f) {
       setFile(f);
       setResult(null);
@@ -85,21 +93,27 @@ export default function BuySheet({
     }
   }
 
+  const adding = useRef(false);
   async function addToList() {
-    if (!result) return;
-    await onAddToList({
-      id: crypto.randomUUID(),
-      name: result.item.name,
-      kind: result.item.kind,
-      tag: result.verdict === "buy" ? "Esencial" : "Para variar",
-      color_name: result.item.color_name,
-      color_hex: result.item.color_hex,
-      material: result.item.material,
-      new_looks: result.new_looks,
-      why: result.reasoning,
-      pair_ids: result.pairs.map((p) => p.garment_id),
-    });
-    setAdded(true);
+    if (!result || added || adding.current) return;
+    adding.current = true;
+    try {
+      await onAddToList({
+        id: crypto.randomUUID(),
+        name: result.item.name,
+        kind: result.item.kind,
+        tag: result.verdict === "buy" ? "Esencial" : "Para variar",
+        color_name: result.item.color_name,
+        color_hex: result.item.color_hex,
+        material: result.item.material,
+        new_looks: result.new_looks,
+        why: result.reasoning,
+        pair_ids: result.pairs.map((p) => p.garment_id),
+      });
+      setAdded(true);
+    } finally {
+      adding.current = false;
+    }
   }
 
   return (
@@ -135,6 +149,7 @@ export default function BuySheet({
             />
           </label>
 
+          <p className="batch-hint">{t("ai.photoNote")}</p>
           {error && <p className="msg msg-error">{error}</p>}
 
           {busy ? (

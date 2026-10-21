@@ -90,7 +90,11 @@ export default function Shopping() {
     }
   }
 
+  // Un toque por vez por sugerencia: el doble toque no agrega dos veces.
+  const listBusy = useRef(new Set<string>());
   async function toggleList(item: ShoppingItem) {
+    if (listBusy.current.has(item.id)) return;
+    listBusy.current.add(item.id);
     const existing = list.find((l) => l.suggestion_id === item.id);
     try {
       if (existing) {
@@ -102,6 +106,8 @@ export default function Shopping() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("shop.listError"));
+    } finally {
+      listBusy.current.delete(item.id);
     }
   }
 
@@ -126,6 +132,7 @@ export default function Shopping() {
             className="avatar bag-btn"
             onClick={() => setListOpen(true)}
             aria-label={t("shop.listButton", { items: plural("garments", list.length) })}
+            title={t("shop.listTitle")}
           >
             <BagIcon width={20} height={20} />
             {list.length > 0 && <span className="badge">{list.length}</span>}

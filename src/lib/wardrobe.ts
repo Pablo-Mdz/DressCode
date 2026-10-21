@@ -51,6 +51,24 @@ export async function ensureDefaultFolders(userId: string) {
   await batch.commit();
 }
 
+// Al cambiar de idioma, las carpetas por defecto (sin renombrar) pasan al idioma nuevo.
+export async function translateDefaultFolders(lang: keyof typeof DEFAULT_FOLDERS): Promise<boolean> {
+  const folders = await listFolders();
+  const others = Object.entries(DEFAULT_FOLDERS).filter(([l]) => l !== lang).map(([, names]) => names);
+  let changed = false;
+  for (const f of folders) {
+    for (const names of others) {
+      const i = names.indexOf(f.name);
+      if (i >= 0 && DEFAULT_FOLDERS[lang][i] !== f.name) {
+        await renameFolder(f.id, DEFAULT_FOLDERS[lang][i]);
+        changed = true;
+        break;
+      }
+    }
+  }
+  return changed;
+}
+
 export async function listFolders(): Promise<Folder[]> {
   const snap = await getDocs(query(userCol("folders"), orderBy("position")));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Folder);

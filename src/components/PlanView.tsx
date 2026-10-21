@@ -58,7 +58,7 @@ export default function PlanView({ outfit, plan, garments }: { outfit: Outfit; p
                 {forecast && (
                   <span className="muted">
                     {" "}
-                    · {forecast.min}°–{forecast.max}° {forecast.description}
+                    · {forecast.min}–{forecast.max} °C {forecast.description}
                   </span>
                 )}
               </span>

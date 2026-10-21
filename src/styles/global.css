@@ -43,6 +43,8 @@ body {
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  /* Palabras larguísimas (URLs pegadas en un pedido) cortan línea en vez de ensanchar la página. */
+  overflow-wrap: anywhere;
 }
 
 img {
@@ -388,6 +390,8 @@ code {
 .link {
   font-size: 14px;
   color: var(--muted);
+  min-height: 44px;
+  padding: 0 8px;
 }
 
 .link strong {
@@ -687,9 +691,9 @@ textarea::placeholder {
 }
 
 .segmented.lang-compact button {
-  width: 42px;
-  height: 30px;
-  font-size: 12px;
+  width: 46px;
+  height: 36px;
+  font-size: 13px;
 }
 
 .login-crest {
@@ -892,11 +896,15 @@ textarea::placeholder {
 }
 
 .photo-preview {
+  flex: none; /* dentro de la hoja (flex) no se achica: la foto ocupa su espacio */
   height: min(330px, 42dvh);
   border-radius: 22px;
 }
 
 .photo-preview img {
+  /* La prenda entera a la vista (sin recortar), sea vertical u horizontal. */
+  position: absolute;
+  inset: 0;
   object-fit: contain;
 }
 
@@ -1386,7 +1394,7 @@ textarea::placeholder {
 
 .chip-sm {
   flex: none;
-  height: 32px;
+  height: 38px;
   padding: 0 12px;
   font-size: 13px;
 }
@@ -1727,13 +1735,13 @@ textarea::placeholder {
   position: absolute;
   top: 4px;
   right: 4px;
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
-  font-size: 15px;
-  line-height: 22px;
+  font-size: 17px;
+  line-height: 30px;
   text-align: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
@@ -1830,8 +1838,8 @@ textarea::placeholder {
 }
 
 .stepper button {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--line);
   font-size: 18px;
@@ -1887,4 +1895,118 @@ textarea::placeholder {
 
 .plan .look-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* ───────────── QA de lanzamiento ───────────── */
+
+/* Textos de ayuda que se leen completos (sin "…"). */
+.weather-row.wrap .weather-text > span:last-child {
+  white-space: normal;
+  overflow: visible;
+}
+
+/* Mientras se escribe en el teléfono, la barra de pestañas y el botón flotante no tapan el botón principal. */
+@media (max-width: 700px) {
+  body:has(textarea:focus, input:not([type="checkbox"]):not([type="file"]):focus) .tabbar,
+  body:has(textarea:focus, input:not([type="checkbox"]):not([type="file"]):focus) .floating-pill {
+    display: none;
+  }
+}
+
+.login-lang {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-lang-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.login-pitch {
+  margin: 4px 0 0;
+  max-width: 300px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.login-tabs {
+  margin-bottom: 4px;
+}
+
+.login-tabs button {
+  height: 40px;
+  font-size: 15px;
+}
+
+.field-hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.inline-link {
+  display: block;
+  min-height: 0;
+  margin-top: 6px;
+  padding: 0;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-align: left;
+}
+
+.login-consent {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  text-align: center;
+}
+
+.login-consent .inline-link {
+  display: inline;
+  font-size: 13px;
+}
+
+.start-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  margin-bottom: 18px;
+  border-radius: 20px;
+  background: var(--tile);
+}
+
+.start-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.privacy-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.filter-title {
+  flex: none;
+  align-self: center;
+  min-width: 76px;
+  font-size: 13px;
+  color: var(--muted);
 }

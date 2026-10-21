@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { createFolder, listFolders, listGarments } from "../lib/wardrobe";
 import type { Folder, Garment } from "../lib/types";
 import { useAuth } from "../context/AuthContext";
@@ -9,7 +9,10 @@ import { tagGarment } from "../lib/ai";
 import PageHeader from "../components/PageHeader";
 import Sheet from "../components/Sheet";
 import AccountSheet from "../components/AccountSheet";
-import { HangerIcon, PlusIcon, SparkleIcon } from "../components/Icons";
+import { CameraIcon, HangerIcon, PlusIcon, SparkleIcon } from "../components/Icons";
+
+// Prendas recién subidas que la IA todavía está etiquetando no cuentan como "sin etiquetar".
+const TAGGING_GRACE_MS = 5 * 60 * 1000;
 
 export default function Ropero() {
   const { user } = useAuth();
@@ -22,19 +25,24 @@ export default function Ropero() {
   const [account, setAccount] = useState(false);
   const [newName, setNewName] = useState("");
   const [busy, setBusy] = useState(false);
+  const creatingRef = useRef(false); // Enter repetido en el formulario: una sola carpeta
+  const navigate = useNavigate();
 
-  useEffect(() => {
+  const load = () =>
     Promise.all([listFolders(), listGarments()])
       .then(([f, g]) => {
         setFolders(f);
         setGarments(g);
       })
       .catch((e) => setError(e instanceof Error ? e.message : t("wardrobe.loadError")));
+
+  useEffect(() => {
+    load();
   }, []);
 
   // Etiqueta con IA, de a una, las prendas subidas antes de que existiera el etiquetado.
   async function tagAll() {
-    const pending = garments.filter((g) => !g.tags);
+    const pending = garments.filter((g) => !g.tags && Date.now() - g.created_at > TAGGING_GRACE_MS);
     setError(null);
     setProgress({ done: 0, total: pending.length });
     for (let i = 0; i < pending.length; i++) {
@@ -51,11 +59,13 @@ export default function Ropero() {
     setProgress(null);
   }
 
-  const untagged = garments.filter((g) => !g.tags).length;
+  const untagged = garments.filter((g) => !g.tags && Date.now() - g.created_at > TAGGING_GRACE_MS).length;
+  const initial = firstName(user).match(/[\p{L}\p{N}]/u)?.[0]?.toUpperCase() ?? "·";
 
   async function addFolder(e?: FormEvent) {
     e?.preventDefault();
-    if (!folders || !newName.trim()) return;
+    if (!folders || !newName.trim() || creatingRef.current) return;
+    creatingRef.current = true;
     setBusy(true);
     try {
       const pos = folders.reduce((m, f) => Math.max(m, f.position), -1) + 1;
@@ -66,6 +76,7 @@ export default function Ropero() {
     } catch (err) {
       setError(err instanceof Error ? err.message : t("wardrobe.createError"));
     } finally {
+      creatingRef.current = false;
       setBusy(false);
     }
   }
@@ -77,14 +88,27 @@ export default function Ropero() {
         title={t("wardrobe.title")}
         subtitle={`${plural("garments", garments.length)} · ${plural("folders", folders?.length ?? 0)}`}
         aside={
-          <button className="avatar" onClick={() => setAccount(true)} aria-label={t("account.title")}>
-            {firstName(user).charAt(0).toUpperCase() || "·"}
+          <button className="avatar" onClick={() => setAccount(true)} aria-label={t("account.title")} title={t("account.title")}>
+            {initial}
           </button>
         }
       />
 
       {error && <p className="msg msg-error">{error}</p>}
       {!folders && !error && <div className="spinner" />}
+
+      {folders && folders.length > 0 && garments.length < 2 && (
+        <section className="start-card fade-in" aria-label={t("wardrobe.startTitle")}>
+          <h2 className="serif-md">{t("wardrobe.startTitle")}</h2>
+          <ol className="start-steps">
+            <li>{t("wardrobe.step1")}</li>
+            <li>{t("wardrobe.step2")}</li>
+          </ol>
+          <button className="btn btn-primary btn-block" onClick={() => navigate(`/ropero/${folders[0].id}?add=1`)}>
+            <CameraIcon width={20} height={20} /> {garments.length ? t("wardrobe.addAnother") : t("wardrobe.startButton")}
+          </button>
+        </section>
+      )}
 
       {folders && untagged > 0 && (
         <div className="banner fade-in">
@@ -145,7 +169,7 @@ export default function Ropero() {
         </form>
       </Sheet>
 
-      <AccountSheet open={account} onClose={() => setAccount(false)} />
+      <AccountSheet open={account} onClose={() => setAccount(false)} onFoldersChanged={load} />
     </section>
   );
 }

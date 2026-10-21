@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { inspireLook } from "../lib/ai";
+import { isReadableImage } from "../lib/image";
 import { chooseOutfit, loadOutfitGarments } from "../lib/outfits";
 import { addToList } from "../lib/shopping";
 import { useI18n, type MessageKey } from "../lib/i18n";
@@ -25,6 +26,7 @@ export default function InspireSheet({ open, onClose }: { open: boolean; onClose
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [garments, setGarments] = useState<Record<string, Garment>>({});
   const [added, setAdded] = useState<Set<number>>(new Set());
+  const addedRef = useRef(new Set<number>()); // evita duplicados con doble toque
 
   useEffect(() => {
     if (!file) return setPreview(null);
@@ -46,6 +48,7 @@ export default function InspireSheet({ open, onClose }: { open: boolean; onClose
     setError(null);
     setOutfit(null);
     setAdded(new Set());
+    addedRef.current.clear();
   };
 
   const close = () => {
@@ -54,8 +57,15 @@ export default function InspireSheet({ open, onClose }: { open: boolean; onClose
     onClose();
   };
 
-  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Solo fotos: un PDF o un archivo roto se rechaza antes de mandarlo a la IA.
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
+    e.target.value = "";
+    if (f && !(await isReadableImage(f))) {
+      setError(t("garment.notImage"));
+      return;
+    }
+    setError(null);
     if (f) {
       setFile(f);
       setOutfit(null);
@@ -72,6 +82,7 @@ export default function InspireSheet({ open, onClose }: { open: boolean; onClose
       setGarments(await loadOutfitGarments([o]));
       setOutfit(o);
       setAdded(new Set());
+    addedRef.current.clear();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("insp.error"));
     } finally {
@@ -87,6 +98,8 @@ export default function InspireSheet({ open, onClose }: { open: boolean; onClose
   }
 
   async function addMissing(item: Inspiration["missing"][number], i: number) {
+    if (addedRef.current.has(i)) return;
+    addedRef.current.add(i);
     setAdded((prev) => new Set(prev).add(i));
     try {
       await addToList({
@@ -102,6 +115,7 @@ export default function InspireSheet({ open, onClose }: { open: boolean; onClose
         pair_ids: [],
       });
     } catch {
+      addedRef.current.delete(i);
       setAdded((prev) => {
         const next = new Set(prev);
         next.delete(i);
@@ -145,6 +159,7 @@ export default function InspireSheet({ open, onClose }: { open: boolean; onClose
             />
           </label>
 
+          <p className="batch-hint">{t("ai.photoNote")}</p>
           {error && <p className="msg msg-error">{error}</p>}
 
           {busy ? (
