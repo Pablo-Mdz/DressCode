@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { chooseOutfit, loadOutfitGarments, requestDayStyle } from "../lib/outfits";
 import { fetchWeather } from "../lib/weather";
+import { listGarments } from "../lib/wardrobe";
 import type { CoupleOutfit, Garment, Outfit, Weather } from "../lib/types";
 import { useCouple } from "../context/CoupleContext";
 import { useAuth } from "../context/AuthContext";
@@ -31,9 +32,10 @@ export default function DayStyle() {
   const [prompt, setPrompt] = useState("");
   const [useWeather, setUseWeather] = useState(() => {
     try {
-      return localStorage.getItem(WEATHER_KEY) !== "0";
+      // Apagado hasta que la persona lo active: así el pedido de ubicación llega cuando ella lo elige.
+      return localStorage.getItem(WEATHER_KEY) === "1";
     } catch {
-      return true;
+      return false;
     }
   });
   const [weather, setWeather] = useState<Weather | null>(null);
@@ -44,6 +46,15 @@ export default function DayStyle() {
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [garments, setGarments] = useState<Record<string, Garment>>({});
   const resultsRef = useRef<HTMLDivElement>(null);
+  const [garmentCount, setGarmentCount] = useState<number | null>(null);
+
+  // Day Style necesita al menos 2 prendas: se avisa antes de escribir, no después de esperar a la IA.
+  useEffect(() => {
+    listGarments()
+      .then((g) => setGarmentCount(g.length))
+      .catch(() => setGarmentCount(null));
+  }, []);
+  const notEnough = garmentCount !== null && garmentCount < 2;
 
   useEffect(() => {
     try {
@@ -113,7 +124,7 @@ export default function DayStyle() {
     }
   }
 
-  const weatherTitle = weather ? `${Math.round(weather.temperature)}° · ${weather.description}` : t("day.weather");
+  const weatherTitle = weather ? `${Math.round(weather.temperature)} °C · ${weather.description}` : t("day.weather");
   const weatherSub = !useWeather
     ? t("day.weatherOff")
     : weather
@@ -164,7 +175,7 @@ export default function DayStyle() {
           </div>
         </div>
 
-        <div className="weather-row">
+        <div className="weather-row wrap">
           <SunIcon />
           <div className="weather-text">
             <span>{useWeather ? weatherTitle : t("day.weather")}</span>
@@ -182,7 +193,7 @@ export default function DayStyle() {
         </div>
 
         {couple && (
-          <div className="weather-row">
+          <div className="weather-row wrap">
             <HeartsIcon />
             <div className="weather-text">
               <span>{t("couple.toggle")}</span>
@@ -201,7 +212,16 @@ export default function DayStyle() {
           </div>
         )}
 
-        <button className="btn btn-primary btn-block btn-lg" disabled={busy || prompt.trim().length < 3}>
+        {notEnough && (
+          <p className="msg msg-info">
+            {t("day.needItems", { n: garmentCount ?? 0 })} <Link to="/ropero">{t("day.goWardrobe")}</Link>
+          </p>
+        )}
+        {!notEnough && prompt.trim().length > 0 && prompt.trim().length < 3 && (
+          <p className="field-hint">{t("day.minChars")}</p>
+        )}
+
+        <button className="btn btn-primary btn-block btn-lg" disabled={busy || notEnough || prompt.trim().length < 3}>
           <SparkleIcon width={20} height={20} /> {busy ? t("day.submitting") : t("day.submit")}
         </button>
       </form>
@@ -278,7 +298,7 @@ export default function DayStyle() {
             <p className="looks-prompt">“{outfit.prompt}”</p>
             {outfit.weather && (
               <span className="muted">
-                {Math.round(outfit.weather.temperature)}° · {outfit.weather.description}
+                {Math.round(outfit.weather.temperature)} °C · {outfit.weather.description}
               </span>
             )}
           </header>
