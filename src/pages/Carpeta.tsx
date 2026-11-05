@@ -687,9 +687,12 @@ function AddGarmentSheet({
       )}
 
       {processing && original && (
-        <button type="button" className="btn btn-outline btn-block" onClick={() => save(true)} disabled={busy}>
-          {t("bg.skip")}
-        </button>
+        <div className="stack-sm">
+          <button type="button" className="btn btn-outline-dark btn-block" onClick={() => save(true)} disabled={busy}>
+            {t("bg.skip")}
+          </button>
+          <p className="batch-hint">{t("bg.skipHint")}</p>
+        </div>
       )}
 
       {skipped > 0 && hasPhoto && <p className="msg msg-info">{t("garment.skipped", { n: skipped })}</p>}
@@ -744,7 +747,7 @@ function AddGarmentSheet({
       <p className="batch-hint">{t("garment.aiNote")}</p>
 
       {hasPhoto && (
-        <button className="btn btn-primary btn-block btn-lg" onClick={() => save()} disabled={!canSave}>
+        <button className="btn btn-primary btn-block btn-lg sheet-cta" onClick={() => save()} disabled={!canSave}>
           {saveLabel}
         </button>
       )}

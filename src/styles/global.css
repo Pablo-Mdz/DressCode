@@ -991,6 +991,25 @@ textarea::placeholder {
   gap: 20px;
 }
 
+ /* Ningún bloque de la hoja se achica: con overflow:hidden (p. ej. .group) quedaban en altura 0. El que scrollea es .sheet-body. */
+.sheet-body > * {
+  flex-shrink: 0;
+}
+
+/* Botón principal al pie de la hoja: queda pegado abajo mientras se scrollea (en desktop quedaba bajo el pliegue). */
+.sheet-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  box-shadow: 0 0 0 10px #fff, 0 14px 0 10px #fff;
+}
+
+/* Deshabilitado es semitransparente: no lo pegamos para que no tape el contenido. */
+.sheet-cta:disabled {
+  position: static;
+  box-shadow: none;
+}
+
 .sheet-text {
   margin: 0;
   font-size: 16px;

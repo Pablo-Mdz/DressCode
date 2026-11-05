@@ -107,12 +107,12 @@ export default function Login() {
     auth.languageCode = lang;
     const provider = new GoogleAuthProvider();
     try {
+      // Si sale bien, el botón sigue en "espera" hasta que la app cambia de pantalla (no vuelve a "Continuar con Google").
       await signInWithPopup(auth, provider);
     } catch (err) {
       const code = (err as { code?: string }).code;
-      if (code === "auth/popup-blocked") await signInWithRedirect(auth, provider);
-      else if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") setError(errorMessage(err));
-    } finally {
+      if (code === "auth/popup-blocked") return void (await signInWithRedirect(auth, provider));
+      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") setError(errorMessage(err));
       setGoogleBusy(false);
     }
   }
