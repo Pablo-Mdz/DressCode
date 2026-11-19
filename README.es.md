@@ -15,6 +15,8 @@ Tu ropero personal y tu estilista con IA. Es una PWA (se instala en el celular d
   <img src="docs/screenshots/shopping.png" width="31%" alt="Shopping: sugerencias de la IA sobre qué comprar" />
 </p>
 
+<p align="center"><sub>La app funciona en español e inglés — se cambia desde el login o desde Cuenta. Las capturas de arriba están en inglés.</sub></p>
+
 - **Ropero**: tus prendas organizadas en carpetas. Vienen 7 por defecto (Camisas, Remeras, Pantalones, Calzado, Camperas, Accesorios, Otros) y podés crear, renombrar o borrar las que quieras. Cada prenda se sube con la cámara o desde la galería, con una descripción opcional.
 - **Day Style**: describís la ocasión ("cena con amigos en un restaurante asiático elegante") y Claude mira las fotos de tu ropero y te propone 2 o 3 outfits armados con tu ropa, teniendo en cuenta el clima del día.
 - **Inspiración** (dentro de Day Style): subís la foto de un look que te gusta (Instagram, Pinterest, la calle) y la IA lo recrea con tu ropa. Te dice qué tan parecido queda y qué prendas te faltarían para acercarte más; esas las podés sumar a tu lista de compras.

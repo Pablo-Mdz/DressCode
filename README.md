@@ -17,6 +17,8 @@ It's a PWA (install it on your phone from the browser), built with React, Fireba
   <img src="docs/screenshots/shopping.png" width="31%" alt="Shopping: AI suggestions for what to buy next" />
 </p>
 
+<p align="center"><sub>The app works in English and Spanish — switch languages from the login screen or Account. Screenshots above are in English.</sub></p>
+
 ## Features
 
 - **Wardrobe** — garments organised in folders (7 defaults: Shirts, T-shirts, Trousers, Shoes, Jackets, Accessories, Other), fully editable. Add photos from the camera or gallery, with an optional description.
