@@ -103,6 +103,10 @@ Storage: users/{uid}/garments/{id}.jpg y {id}_thumb.jpg
 - **Shopping** es otra Cloud Function (`shoppingSuggestions`) que recibe el mismo ropero más tus preferencias y devuelve una lectura del ropero y de 3 a 6 prendas para comprar, cada una con las prendas tuyas con las que combina.
 - El clima sale de [Open-Meteo](https://open-meteo.com), que es gratis y no pide API key, usando la ubicación del teléfono.
 
+### Cupo diario de IA
+
+El registro es abierto, así que cada cuenta tiene un tope diario para que nadie pueda gastar todo el crédito de la API: **30 pedidos** (Day Style, Shopping, ¿Lo compro?, Inspiración, Planificar y looks en pareja) y **300 etiquetados** por día (UTC). Al llegar al tope la app muestra "Llegaste al límite de pedidos a la IA por hoy". Se cambian con `DAILY_AI_LIMIT` y `DAILY_TAG_LIMIT` en `functions/.env`. El contador vive en `usage/{uid}`, que la app no puede leer ni escribir (solo las funciones).
+
 ### Costo de la IA
 
 Por defecto se usa `claude-opus-5-5`. Con un ropero de ~40 prendas, cada pedido de Day Style o Shopping procesa unos 15-20 mil tokens de entrada, lo que da **del orden de USD 0,10 por pedido**. Si se repite el pedido en pocos minutos, el ropero se cachea y la entrada sale ~10 veces más barata.
@@ -125,3 +129,6 @@ y volvé a publicar con `firebase deploy --only functions`.
 | `npm run build` | Build de producción (en `dist/`) |
 | `npm run icons` | Regenera los íconos PNG de la PWA |
 | `cd functions && npm run build` | Compila la Cloud Function |
+| `npm run test:rules` | Prueba las reglas de Firestore y Storage contra los emuladores (necesita `firebase-tools` global y Java) |
+
+Los mismos chequeos (build, typecheck de las funciones y tests de reglas) corren en GitHub Actions en cada PR (`.github/workflows/ci.yml`).

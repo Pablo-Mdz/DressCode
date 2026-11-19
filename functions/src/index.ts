@@ -1,9 +1,16 @@
-// DressCode · Cloud Functions
+// DressCode · Cloud Functions (callables, región europe-west1)
 //   dayStyle             → 2-3 outfits para una ocasión, usando solo prendas del ropero
 //   shoppingSuggestions  → qué comprar para sumar variedad, según el ropero y el estilo buscado
+//   tagGarment           → etiqueta una prenda (tipo, color, temporada…) y opcionalmente elige su carpeta
+//   shouldBuy            → "¿Lo compro?": veredicto sobre una prenda vista en una tienda
+//   inspireLook          → recrea con el ropero el look de una foto de inspiración
+//   planWeek             → un look por día para una semana o un viaje
+//   garmentImage         → devuelve la foto original para reprocesarla en el teléfono (sin IA)
+//   coupleStyle          → looks coordinados con los roperos de una pareja vinculada
 //
 // Secreto necesario:   firebase functions:secrets:set ANTHROPIC_API_KEY
-// Modelo opcional:     variable de entorno ANTHROPIC_MODEL (por defecto claude-opus-5-5)
+// Modelos opcionales:  ANTHROPIC_MODEL (por defecto claude-opus-5-5), ANTHROPIC_TAG_MODEL (claude-haiku-5-5)
+// Cupos diarios:       DAILY_AI_LIMIT (por defecto 30 pedidos), DAILY_TAG_LIMIT (300 etiquetados) por usuario
 
 import { randomUUID } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
@@ -49,6 +56,7 @@ const MESSAGES = {
     badImage: "No pude leer la foto. Probá con otra.",
     notFound: "No encontré esa prenda.",
     noCombination: "No encontré una combinación posible. Probá de nuevo.",
+    dailyLimit: "Llegaste al límite de pedidos a la IA por hoy. Mañana podés seguir.",
   },
   en: {
     unauthenticated: "Please sign in.",
@@ -68,6 +76,7 @@ const MESSAGES = {
     badImage: "I couldn't read the photo. Try another one.",
     notFound: "I couldn't find that item.",
     noCombination: "I couldn't find a possible combination. Please try again.",
+    dailyLimit: "You reached today's limit of AI requests. You can continue tomorrow.",
   },
 };
 
@@ -153,6 +162,31 @@ async function loadWardrobe(
     blocks,
     info: new Map(garments.map((g) => [g.id, { thumb_url: g.thumbUrl, description: g.description }])),
   };
+}
+
+// ─────────────────────────── Cupo diario por usuario ───────────────────────────
+// El registro es abierto: sin un tope, una sola cuenta podría gastar todo el crédito de la API.
+// Se guarda en /usage/{uid}, fuera de /users, porque las reglas de Firestore no dejan que la app
+// lo lea ni lo escriba (solo el Admin SDK de las funciones).
+
+const DAILY_LIMIT = {
+  ai: Number(process.env.DAILY_AI_LIMIT ?? 30),
+  tag: Number(process.env.DAILY_TAG_LIMIT ?? 300),
+};
+
+async function consumeQuota(uid: string, kind: keyof typeof DAILY_LIMIT, lang: Lang): Promise<void> {
+  const db = getFirestore();
+  const ref = db.collection("usage").doc(uid);
+  const today = new Date().toISOString().slice(0, 10); // día UTC
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const sameDay = snap.exists && snap.get("date") === today;
+    const used = sameDay ? Number(snap.get(kind) ?? 0) : 0;
+    if (used >= DAILY_LIMIT[kind]) {
+      throw new HttpsError("resource-exhausted", MESSAGES[lang].dailyLimit);
+    }
+    tx.set(ref, { date: today, ...(sameDay ? snap.data() : { ai: 0, tag: 0 }), [kind]: used + 1 });
+  });
 }
 
 async function askClaude<T>(
@@ -277,6 +311,7 @@ export const dayStyle = onCall(CALL_OPTS, async (request) => {
 
   const wardrobe = await loadWardrobe(uid, 2, m.needTwo);
 
+  await consumeQuota(uid, "ai", lang);
   const parsed = await askClaude<{ outfits: Suggestion[] }>(
     `${DAY_STYLE_PROMPT}\n- ${VOICE[lang]}`,
     [...wardrobe.blocks, { type: "text", text: `Ocasión: ${prompt}${describeWeather(weather)}\n\nArmame 2 o 3 outfits.` }],
@@ -400,6 +435,7 @@ export const shoppingSuggestions = onCall(CALL_OPTS, async (request) => {
     .filter(Boolean)
     .join("\n");
 
+  await consumeQuota(uid, "ai", lang);
   const parsed = await askClaude<{ summary: string; items: Omit<ShoppingItem, "id">[] }>(
     `${SHOPPING_PROMPT}\n- ${VOICE[lang]}`,
     [...wardrobe.blocks, { type: "text", text: request_text }],
@@ -492,6 +528,7 @@ export const tagGarment = onCall(
           .join("\n")}`
       : "";
 
+    await consumeQuota(uid, "tag", lang);
     const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
     let response: Anthropic.Message;
     try {
@@ -623,6 +660,7 @@ export const shouldBuy = onCall(CALL_OPTS, async (request) => {
 
   const wardrobe = await loadWardrobe(uid, 1, m.needOne);
 
+  await consumeQuota(uid, "ai", lang);
   const parsed = await askClaude<BuyVerdict>(
     `${BUY_PROMPT}\n- ${VOICE[lang]}`,
     [
@@ -722,6 +760,7 @@ export const inspireLook = onCall(CALL_OPTS, async (request) => {
 
   const wardrobe = await loadWardrobe(uid, 2, m.needTwo);
 
+  await consumeQuota(uid, "ai", lang);
   const parsed = await askClaude<InspireResult>(
     `${INSPIRE_PROMPT}\n- ${VOICE[lang]}`,
     [
@@ -835,6 +874,7 @@ export const planWeek = onCall(CALL_OPTS, async (request) => {
     .filter(Boolean)
     .join("\n");
 
+  await consumeQuota(uid, "ai", lang);
   const parsed = await askClaude<PlanResult>(
     `${PLAN_PROMPT}\n- ${VOICE[lang]}`,
     [...wardrobe.blocks, { type: "text", text: `${context}\n\nArmame el plan: un look por día.` }],
@@ -962,6 +1002,7 @@ export const coupleStyle = onCall(CALL_OPTS, async (request) => {
     loadWardrobe(partner, 2, m.partnerEmpty, `Ropero de la persona B (${nameB}):`),
   ]);
 
+  await consumeQuota(uid, "ai", lang);
   const parsed = await askClaude<{ outfits: CouplePick[] }>(
     `${COUPLE_PROMPT}\n- ${VOICE[lang]}`,
     [
