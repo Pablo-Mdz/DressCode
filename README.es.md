@@ -2,7 +2,18 @@
 
 [English](README.md) · **Español**
 
-Tu ropero personal y tu estilista con IA. Es una PWA (se instala en el celular desde el navegador) con:
+[![Licencia: AGPL v3](https://img.shields.io/badge/licencia-AGPL--3.0-blue.svg)](LICENSE)
+[![CI](https://github.com/Pablo-Mdz/DressCode/actions/workflows/ci.yml/badge.svg)](https://github.com/Pablo-Mdz/DressCode/actions/workflows/ci.yml)
+[![PWA](https://img.shields.io/badge/instalable-PWA-5A2D82.svg)](#6-instalarla-en-el-celular)
+[![Estrellas](https://img.shields.io/github/stars/Pablo-Mdz/DressCode?style=social)](https://github.com/Pablo-Mdz/DressCode/stargazers)
+
+Tu ropero personal y tu estilista con IA. Es una PWA (se instala en el celular desde el navegador) **y es tuya para alojar donde quieras**: la clonás, la conectás a tu propio proyecto de Firebase y tu propia clave de Anthropic, y corre bajo tu control total — tus fotos, tu base de datos, tu gasto de IA, sin pasar por ningún servidor ajeno. Tiene:
+
+<p align="center">
+  <img src="docs/screenshots/wardrobe.png" width="31%" alt="Pantalla del Ropero: carpetas con prendas" />
+  <img src="docs/screenshots/day-style.png" width="31%" alt="Day Style: outfits armados por la IA para una ocasión" />
+  <img src="docs/screenshots/shopping.png" width="31%" alt="Shopping: sugerencias de la IA sobre qué comprar" />
+</p>
 
 - **Ropero**: tus prendas organizadas en carpetas. Vienen 7 por defecto (Camisas, Remeras, Pantalones, Calzado, Camperas, Accesorios, Otros) y podés crear, renombrar o borrar las que quieras. Cada prenda se sube con la cámara o desde la galería, con una descripción opcional.
 - **Day Style**: describís la ocasión ("cena con amigos en un restaurante asiático elegante") y Claude mira las fotos de tu ropero y te propone 2 o 3 outfits armados con tu ropa, teniendo en cuenta el clima del día.
@@ -141,7 +152,13 @@ y volvé a publicar con `firebase deploy --only functions`.
 
 La app incluye *Términos de uso* y *Privacidad y datos* (en el login y en Cuenta), y la opción *Eliminar mi cuenta*, que borra el ropero, las fotos, el historial y la cuenta. Responsable: Pablo Cigoy (Alemania) · pablocigoy@gmail.com.
 
-El código está bajo [AGPL-3.0](LICENSE), la misma licencia que `@imgly/background-removal`; la app enlaza a su código fuente desde Cuenta.
+El código está bajo [AGPL-3.0](LICENSE), la misma licencia que `@imgly/background-removal`; la app enlaza a su código fuente desde Cuenta. En criollo: podés usarlo, modificarlo y redistribuirlo libremente, pero si lo modificás y dejás que otras personas lo usen por red (por ejemplo, publicás tu propio DressCode modificado), tenés que ponerles a disposición ese código fuente modificado también.
+
+## Contribuir
+
+Los issues y pull requests son bienvenidos — mirá [CONTRIBUTING.md](CONTRIBUTING.md) (en inglés) para cómo está organizado el proyecto, cómo correrlo en local contra tu propio Firebase y qué revisa el CI en cada PR. ¿Encontraste un problema de seguridad? Reportalo en privado en vez de abrir un issue público — mirá [SECURITY.md](SECURITY.md).
+
+Si DressCode te resulta útil, una ⭐ en el repo ayuda a que otras personas lo encuentren.
 
 ## Scripts
 
