@@ -33,9 +33,11 @@ To touch the Cloud Functions, also run `cd functions && npm install`, and deploy
 Run what CI runs:
 
 ```bash
+npm run lint                       # ESLint
+npm run format:check               # Prettier (run `npm run format` to fix)
 npm run build                      # typecheck + production build
 cd functions && npm run build      # typecheck the functions
-npm run test:rules                 # Firestore/Storage rules tests (needs firebase-tools + Java)
+npm run test:rules                 # Firestore/Storage rules tests (needs Java)
 ```
 
 Keep changes focused — unrelated formatting or refactors in the same PR make review harder.
@@ -46,7 +48,20 @@ Every user-facing string lives in `src/lib/i18n.tsx` as a key in both the `es` a
 
 ## Code style
 
-There's no linter configured yet — match the surrounding code: the comment density, the naming, and whether a file's comments are in Spanish (most of the original app) or English (the parts written for this English documentation pass). TypeScript strictness is whatever `tsconfig.json` already enforces; `npm run build` will catch type errors.
+Formatting is Prettier's job (`.prettierrc.json`, 120 columns) — run `npm run format` and don't hand-tune whitespace. ESLint (`eslint.config.js`) covers the rest; CI fails on errors but not on warnings, so the handful of existing `react-hooks/exhaustive-deps` warnings won't block your PR. If you want to fix one, do it in its own PR: changing a hook's dependencies can change when it re-runs.
+
+For everything a tool can't check, match the surrounding code: the comment density, the naming, and whether a file's comments are in Spanish (most of the original app) or English (the parts written for this English documentation pass). TypeScript strictness is whatever `tsconfig.json` already enforces.
+
+New source files need the two-line SPDX header the rest of the files carry:
+
+```ts
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+```
+
+## Changelog
+
+Add a bullet under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md) for anything a user or a self-hoster would notice. Purely internal changes (a refactor, a test, a typo) don't need one.
 
 ## Commit messages
 

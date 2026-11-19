@@ -1,0 +1,7 @@
+# Commits that only moved text around. `git blame` skips these when configured with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub reads this file automatically.
+
+# chore: add lint/format tooling, SPDX headers and project metadata
+# (the SPDX headers and the one-off Prettier pass)
+d9be8db7d0d40a62430d73e5144d72e8ab70e182
