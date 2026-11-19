@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependencias
+        run: |
+          npm ci
+          npm ci --prefix functions
+
+      - name: Typecheck y build de la app
+        run: npm run build
+
+      - name: Typecheck de las Cloud Functions
+        run: npm run build --prefix functions
+
+      - name: Tests de las reglas de Firestore y Storage
+        run: npx -y firebase-tools@14 emulators:exec --project demo-dresscode --only firestore,storage "node --test tests/rules.test.mjs"

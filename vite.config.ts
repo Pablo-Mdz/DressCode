@@ -40,7 +40,7 @@ export default defineConfig({
         // El motor de recorte de fondo (~24 MB) no se instala con la app:
         // se descarga y se cachea recién la primera vez que se usa.
         globIgnores: ["**/ort*"],
-        // Supabase (datos, fotos firmadas, funciones) nunca se cachea.
+        // Firebase (datos, fotos, funciones) nunca se cachea: solo el motor de recorte y las fuentes.
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.includes("/assets/ort") || url.hostname === "staticimgly.com",
