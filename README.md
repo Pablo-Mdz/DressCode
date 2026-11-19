@@ -2,9 +2,20 @@
 
 **English** · [Español](README.es.md)
 
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![CI](https://github.com/Pablo-Mdz/DressCode/actions/workflows/ci.yml/badge.svg)](https://github.com/Pablo-Mdz/DressCode/actions/workflows/ci.yml)
+[![PWA](https://img.shields.io/badge/installable-PWA-5A2D82.svg)](#6-install-on-your-phone)
+[![Stars](https://img.shields.io/github/stars/Pablo-Mdz/DressCode?style=social)](https://github.com/Pablo-Mdz/DressCode/stargazers)
+
 Your wardrobe and an AI stylist in one installable app. Photograph each garment once; DressCode then suggests outfits for any occasion, recreates looks from an inspiration photo, plans trips with the real forecast, and tells you whether a piece in a shop is worth buying — always using clothes you actually own.
 
-It's a PWA (install it on your phone from the browser), built with React, Firebase and the Claude API.
+It's a PWA (install it on your phone from the browser), built with React, Firebase and the Claude API — **and it's yours to self-host.** Clone it, point it at your own Firebase project and your own Anthropic key, and it runs entirely under your control: your photos, your database, your AI bill, no one else's servers.
+
+<p align="center">
+  <img src="docs/screenshots/wardrobe.png" width="31%" alt="Wardrobe screen: folders of garments" />
+  <img src="docs/screenshots/day-style.png" width="31%" alt="Day Style: AI-generated outfits for an occasion" />
+  <img src="docs/screenshots/shopping.png" width="31%" alt="Shopping: AI suggestions for what to buy next" />
+</p>
 
 ## Features
 
@@ -167,9 +178,15 @@ and redeploy with `firebase deploy --only functions`. The tagging model can be c
 
 The same checks (build, functions typecheck and rules tests) run on GitHub Actions for every PR (`.github/workflows/ci.yml`).
 
+## Contributing
+
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how the project is laid out, how to run it locally against your own Firebase project, and what CI checks on every PR. Found a security issue? Please report it privately rather than opening a public issue — see [SECURITY.md](SECURITY.md).
+
+If DressCode is useful to you, a ⭐ on the repo helps other people find it.
+
 ## License
 
-DressCode is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-only).
+DressCode is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-only). In short: you can run it, modify it and redistribute it freely, but if you modify it and let others use it over a network (e.g. you host your own public DressCode), you must make your modified source available to them too.
 
 It uses [`@imgly/background-removal`](https://github.com/imgly/background-removal-js), which is itself licensed under AGPL-3.0; the project is licensed under the same terms to stay compatible. Weather data comes from [Open-Meteo](https://open-meteo.com).
 

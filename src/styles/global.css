@@ -1924,12 +1924,14 @@ textarea::placeholder {
   overflow: visible;
 }
 
-/* Mientras se escribe en el teléfono, la barra de pestañas y el botón flotante no tapan el botón principal. */
-@media (max-width: 700px) {
-  body:has(textarea:focus, input:not([type="checkbox"]):not([type="file"]):focus) .tabbar,
-  body:has(textarea:focus, input:not([type="checkbox"]):not([type="file"]):focus) .floating-pill {
-    display: none;
-  }
+/* Espacio extra abajo cuando el teclado del teléfono está abierto (lo calcula Layout con visualViewport),
+   para que el botón principal de la página no quede tapado por el teclado ni por la barra de pestañas.
+   Nota: antes esto se resolvía ocultando la barra de pestañas mientras un campo tenía el foco, pero eso
+   creaba una carrera real: al tocar el botón, el campo perdía el foco (blur) ANTES de que soltaras el dedo,
+   la barra de pestañas reaparecía en ese instante exacto y el toque terminaba activando una pestaña en vez
+   de enviar el formulario. Este enfoque no depende de :focus, así que no se dispara a mitad de un toque. */
+.content {
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 96px + var(--kb-h, 0px));
 }
 
 .login-lang {
