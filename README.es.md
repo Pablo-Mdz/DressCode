@@ -1,5 +1,7 @@
 # DressCode
 
+[English](README.md) · **Español**
+
 Tu ropero personal y tu estilista con IA. Es una PWA (se instala en el celular desde el navegador) con:
 
 - **Ropero**: tus prendas organizadas en carpetas. Vienen 7 por defecto (Camisas, Remeras, Pantalones, Calzado, Camperas, Accesorios, Otros) y podés crear, renombrar o borrar las que quieras. Cada prenda se sube con la cámara o desde la galería, con una descripción opcional.
@@ -69,7 +71,21 @@ npm run dev
 3. Hacé un nuevo deploy.
 4. En Firebase → **Authentication → Configuración → Dominios autorizados**, agregá el dominio de Netlify (por ejemplo `dresscode.netlify.app`). Sin este paso, el login con Google no funciona.
 
-### 5. Instalarla en el celular
+### 5. App Check (recomendado)
+
+App Check prueba que cada pedido viene de tu app publicada y no de un script que copió la configuración pública de Firebase. El código ya está listo; se activa en dos etapas para no cortar la app:
+
+1. **Clave de reCAPTCHA.** En Google Cloud Console → *Security* → *reCAPTCHA* → *Create key*: tipo *Website*, dominio de Netlify (por ejemplo `dresscode.netlify.app`). Copiá el ID de la clave. El plan gratis alcanza de sobra (10.000 verificaciones por mes).
+2. **Registrar la app.** En Firebase → *App Check* → *Apps* → tu app web → *reCAPTCHA Enterprise* → pegá la clave → *Guardar*.
+3. **Cargarla en Netlify.** Agregá la variable `VITE_RECAPTCHA_SITE_KEY` con esa clave y volvé a publicar.
+4. **Esperar y mirar.** Uno o dos días después, en Firebase → *App Check* → *APIs*, las solicitudes deberían figurar como verificadas.
+5. **Exigirlo.**
+   - Para Firestore y Storage: en esa misma pantalla, *Aplicar*.
+   - Para las funciones: agregá `ENFORCE_APP_CHECK=true` en `functions/.env` y publicá con `firebase deploy --only functions`.
+
+> En local (`npm run dev`) la app usa un token de depuración: la consola del navegador lo muestra la primera vez. Registralo en *App Check* → *Apps* → *Administrar tokens de depuración*.
+
+### 6. Instalarla en el celular
 
 Abrí la URL de Netlify en el teléfono:
 - **iPhone (Safari)**: Compartir → *Agregar a pantalla de inicio*.
@@ -120,6 +136,12 @@ ANTHROPIC_MODEL=claude-sonnet-5-5
 y volvé a publicar con `firebase deploy --only functions`.
 
 ---
+
+## Privacidad, términos y licencia
+
+La app incluye *Términos de uso* y *Privacidad y datos* (en el login y en Cuenta), y la opción *Eliminar mi cuenta*, que borra el ropero, las fotos, el historial y la cuenta. Responsable: Pablo Cigoy (Alemania) · pablocigoy@gmail.com.
+
+El código está bajo [AGPL-3.0](LICENSE), la misma licencia que `@imgly/background-removal`; la app enlaza a su código fuente desde Cuenta.
 
 ## Scripts
 

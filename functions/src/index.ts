@@ -10,6 +10,7 @@
 //
 // Secreto necesario:   firebase functions:secrets:set ANTHROPIC_API_KEY
 // Modelos opcionales:  ANTHROPIC_MODEL (por defecto claude-opus-5-5), ANTHROPIC_TAG_MODEL (claude-haiku-5-5)
+// App Check:          ENFORCE_APP_CHECK=true exige el token de App Check en todas las funciones
 // Cupos diarios:       DAILY_AI_LIMIT (por defecto 10 pedidos), DAILY_TAG_LIMIT (50 etiquetados) por usuario
 
 import { randomUUID } from "node:crypto";
@@ -30,7 +31,10 @@ const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5-5";
 // Modelo rápido y económico para etiquetar prendas al subirlas.
 const TAG_MODEL = process.env.ANTHROPIC_TAG_MODEL ?? "claude-haiku-5-5";
 const MAX_GARMENTS = 120;
-const CALL_OPTS = { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 300, memory: "512MiB" as const };
+// App Check: con ENFORCE_APP_CHECK=true (functions/.env) solo responden pedidos que vienen de la app publicada.
+// Se activa recién después de configurar reCAPTCHA en la app (ver README), si no la app deja de funcionar.
+const APP_CHECK = { enforceAppCheck: process.env.ENFORCE_APP_CHECK === "true" };
+const CALL_OPTS = { ...APP_CHECK, secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 300, memory: "512MiB" as const };
 
 // ─────────────────────────── Idioma ───────────────────────────
 
@@ -487,7 +491,7 @@ const TAG_SCHEMA = {
 };
 
 export const tagGarment = onCall(
-  { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 60, memory: "256MiB" },
+  { ...APP_CHECK, secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 60, memory: "256MiB" },
   async (request) => {
     const lang = pickLang(request.data?.lang);
     const m = MESSAGES[lang];
@@ -916,7 +920,7 @@ export const planWeek = onCall(CALL_OPTS, async (request) => {
 // Devuelve la foto guardada en base64 para reprocesarla en el teléfono (quitar fondo)
 // sin tener que configurar CORS en el bucket.
 
-export const garmentImage = onCall({ timeoutSeconds: 60, memory: "256MiB" }, async (request) => {
+export const garmentImage = onCall({ ...APP_CHECK, timeoutSeconds: 60, memory: "256MiB" }, async (request) => {
   const lang = pickLang(request.data?.lang);
   const m = MESSAGES[lang];
   const uid = request.auth?.uid;

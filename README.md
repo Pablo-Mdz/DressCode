@@ -20,6 +20,7 @@ It's a PWA (install it on your phone from the browser), built with React, Fireba
 - **Couple looks** — invite your partner by email; once accepted, Day Style offers "For both of us" and coordinates outfits across both wardrobes. Each person still sees only their own garments; joint looks are shared.
 - **History** — every look you requested, with the option to mark the one you chose.
 - **Separate accounts** — email/password or Google sign-in; each person only sees their own wardrobe.
+- **Privacy & terms** — plain-language *Terms of use* and *Privacy & data* (GDPR rights, processors, retention), and *Delete my account*, which removes the wardrobe, photos, history and the account itself.
 
 ## Architecture
 
@@ -118,11 +119,29 @@ npm run dev
 3. Trigger a new deploy.
 4. In Firebase → **Authentication → Settings → Authorised domains**, add your Netlify domain. Google sign-in won't work without it.
 
-### 5. Install on your phone
+### 5. App Check (recommended)
+
+App Check proves that each request comes from your published app and not from a script that copied the public Firebase config. The code is ready; it is turned on in two stages so the app keeps working:
+
+1. **reCAPTCHA key.** In Google Cloud Console → *Security* → *reCAPTCHA* → *Create key*: type *Website*, your Netlify domain (e.g. `dresscode.netlify.app`). Copy the key ID. The free tier is more than enough (10,000 assessments a month).
+2. **Register the app.** In Firebase → *App Check* → *Apps* → your web app → *reCAPTCHA Enterprise* → paste the key → *Save*.
+3. **Add it to Netlify.** Set `VITE_RECAPTCHA_SITE_KEY` to that key and redeploy.
+4. **Wait and check.** A day or two later, Firebase → *App Check* → *APIs* should show the requests as verified.
+5. **Enforce it.**
+   - For Firestore and Storage: on that same screen, click *Enforce*.
+   - For the functions: add `ENFORCE_APP_CHECK=true` to `functions/.env` and deploy with `firebase deploy --only functions`.
+
+> Locally (`npm run dev`) the app uses a debug token: the browser console prints it the first time. Register it under *App Check* → *Apps* → *Manage debug tokens*.
+
+### 6. Install on your phone
 
 Open the site on your phone, then:
 - **iPhone (Safari):** Share → *Add to Home Screen*.
 - **Android (Chrome):** ⋮ menu → *Install app*.
+
+## Daily AI quota
+
+Sign-up is open, so every account has a daily cap so nobody can drain the API credit: **10 requests** (Day Style, Shopping, Should I buy it?, Inspiration, Plan, couple looks) and **50 taggings** per day (UTC). Change them with `DAILY_AI_LIMIT` / `DAILY_TAG_LIMIT` in `functions/.env`. The counter lives in `usage/{uid}`, which the app can neither read nor write (only the functions can).
 
 ## AI cost
 
@@ -144,6 +163,9 @@ and redeploy with `firebase deploy --only functions`. The tagging model can be c
 | `npm run build` | Production build (to `dist/`) |
 | `npm run icons` | Regenerates the PWA PNG icons |
 | `cd functions && npm run build` | Compiles the Cloud Functions |
+| `npm run test:rules` | Tests the Firestore and Storage security rules against the emulators (needs global `firebase-tools` and Java) |
+
+The same checks (build, functions typecheck and rules tests) run on GitHub Actions for every PR (`.github/workflows/ci.yml`).
 
 ## License
 

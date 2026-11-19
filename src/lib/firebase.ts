@@ -3,6 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 const env = import.meta.env;
 
@@ -18,6 +19,14 @@ const config = {
 export const isConfigured = Boolean(config.apiKey && config.projectId && config.appId);
 
 const app = initializeApp(isConfigured ? config : { apiKey: "missing", projectId: "missing", appId: "missing" });
+
+// App Check: prueba que los pedidos vienen de esta app (y no de un script con la config pública).
+// Solo se activa si hay clave de reCAPTCHA Enterprise; en desarrollo usa un token de depuración.
+const appCheckKey = env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+if (isConfigured && appCheckKey) {
+  if (env.DEV) (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(appCheckKey), isTokenAutoRefreshEnabled: true });
+}
 
 export const auth = getAuth(app);
 auth.languageCode = "es";
