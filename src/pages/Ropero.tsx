@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createFolder, listFolders, listGarments } from "../lib/wardrobe";
@@ -60,7 +63,10 @@ export default function Ropero() {
   }
 
   const untagged = garments.filter((g) => !g.tags && Date.now() - g.created_at > TAGGING_GRACE_MS).length;
-  const initial = firstName(user).match(/[\p{L}\p{N}]/u)?.[0]?.toUpperCase() ?? "·";
+  const initial =
+    firstName(user)
+      .match(/[\p{L}\p{N}]/u)?.[0]
+      ?.toUpperCase() ?? "·";
 
   async function addFolder(e?: FormEvent) {
     e?.preventDefault();
@@ -88,7 +94,12 @@ export default function Ropero() {
         title={t("wardrobe.title")}
         subtitle={`${plural("garments", garments.length)} · ${plural("folders", folders?.length ?? 0)}`}
         aside={
-          <button className="avatar" onClick={() => setAccount(true)} aria-label={t("account.title")} title={t("account.title")}>
+          <button
+            className="avatar"
+            onClick={() => setAccount(true)}
+            aria-label={t("account.title")}
+            title={t("account.title")}
+          >
             {initial}
           </button>
         }
@@ -105,7 +116,8 @@ export default function Ropero() {
             <li>{t("wardrobe.step2")}</li>
           </ol>
           <button className="btn btn-primary btn-block" onClick={() => navigate(`/ropero/${folders[0].id}?add=1`)}>
-            <CameraIcon width={20} height={20} /> {garments.length ? t("wardrobe.addAnother") : t("wardrobe.startButton")}
+            <CameraIcon width={20} height={20} />{" "}
+            {garments.length ? t("wardrobe.addAnother") : t("wardrobe.startButton")}
           </button>
         </section>
       )}
@@ -137,7 +149,9 @@ export default function Ropero() {
               >
                 {cover ? <img src={cover} alt="" /> : <HangerIcon className="folder-icon" width={30} height={30} />}
                 <span className="folder-name">{f.name}</span>
-                <span className="folder-count">{items.length ? plural("garments", items.length) : t("wardrobe.empty")}</span>
+                <span className="folder-count">
+                  {items.length ? plural("garments", items.length) : t("wardrobe.empty")}
+                </span>
               </Link>
             );
           })}
@@ -152,7 +166,11 @@ export default function Ropero() {
         open={creating}
         onClose={() => setCreating(false)}
         title={t("wardrobe.newFolder")}
-        action={{ label: busy ? t("common.creating") : t("common.create"), onClick: () => addFolder(), disabled: busy || !newName.trim() }}
+        action={{
+          label: busy ? t("common.creating") : t("common.create"),
+          onClick: () => addFolder(),
+          disabled: busy || !newName.trim(),
+        }}
       >
         <form onSubmit={addFolder} className="form">
           <label className="field">

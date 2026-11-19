@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -32,4 +35,7 @@ export const auth = getAuth(app);
 auth.languageCode = "es";
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const functions = getFunctions(app, (env.VITE_FIREBASE_FUNCTIONS_REGION as string | undefined) ?? "europe-west1");
+export const functions = getFunctions(
+  app,
+  (env.VITE_FIREBASE_FUNCTIONS_REGION as string | undefined) ?? "europe-west1",
+);

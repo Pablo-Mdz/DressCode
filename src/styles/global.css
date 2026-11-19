@@ -1,3 +1,6 @@
+/* SPDX-FileCopyrightText: © 2026 Pablo Cigoy */
+/* SPDX-License-Identifier: AGPL-3.0-only */
+
 /* ──────────────────────────────────────────────────────────────
    DressCode · Minimalismo francés
    Blanco, tinta y un azul de París · Instrument Serif + DM Sans
@@ -630,7 +633,8 @@ textarea::placeholder {
   max-width: 60%;
   padding-right: 20px;
   border: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8a8e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E") right center / 16px no-repeat;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8a8e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E")
+    right center / 16px no-repeat;
   color: var(--muted);
   font-size: 16px;
   text-align: right;
@@ -991,7 +995,7 @@ textarea::placeholder {
   gap: 20px;
 }
 
- /* Ningún bloque de la hoja se achica: con overflow:hidden (p. ej. .group) quedaban en altura 0. El que scrollea es .sheet-body. */
+/* Ningún bloque de la hoja se achica: con overflow:hidden (p. ej. .group) quedaban en altura 0. El que scrollea es .sheet-body. */
 .sheet-body > * {
   flex-shrink: 0;
 }
@@ -1001,7 +1005,9 @@ textarea::placeholder {
   position: sticky;
   bottom: 0;
   z-index: 1;
-  box-shadow: 0 0 0 10px #fff, 0 14px 0 10px #fff;
+  box-shadow:
+    0 0 0 10px #fff,
+    0 14px 0 10px #fff;
 }
 
 /* Deshabilitado es semitransparente: no lo pegamos para que no tape el contenido. */

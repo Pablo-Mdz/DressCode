@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { isConfigured } from "./lib/firebase";
@@ -18,9 +21,7 @@ export default function App() {
   if (!isConfigured) {
     return (
       <Splash>
-        <p className="muted center">
-          {t("common.notConfigured", { vars: "VITE_FIREBASE_*" })}
-        </p>
+        <p className="muted center">{t("common.notConfigured", { vars: "VITE_FIREBASE_*" })}</p>
       </Splash>
     );
   }

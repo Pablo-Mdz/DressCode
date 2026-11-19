@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { Garment, Suggestion } from "../lib/types";
 import { CheckIcon } from "./Icons";
 import { useI18n } from "../lib/i18n";
@@ -30,7 +33,11 @@ export default function OutfitCard({
           const g = garments[id];
           return (
             <div key={id} className="photo look-piece">
-              {g ? <img src={g.thumb_url} alt={g.description ?? t("garment.alt")} /> : <span className="gone">{t("look.deleted")}</span>}
+              {g ? (
+                <img src={g.thumb_url} alt={g.description ?? t("garment.alt")} />
+              ) : (
+                <span className="gone">{t("look.deleted")}</span>
+              )}
             </div>
           );
         })}

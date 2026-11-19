@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // DressCode · Cloud Functions (callables, región europe-west1)
 //   dayStyle             → 2-3 outfits para una ocasión, usando solo prendas del ropero
 //   shoppingSuggestions  → qué comprar para sumar variedad, según el ropero y el estilo buscado
@@ -318,7 +321,10 @@ export const dayStyle = onCall(CALL_OPTS, async (request) => {
   await consumeQuota(uid, "ai", lang);
   const parsed = await askClaude<{ outfits: Suggestion[] }>(
     `${DAY_STYLE_PROMPT}\n- ${VOICE[lang]}`,
-    [...wardrobe.blocks, { type: "text", text: `Ocasión: ${prompt}${describeWeather(weather)}\n\nArmame 2 o 3 outfits.` }],
+    [
+      ...wardrobe.blocks,
+      { type: "text", text: `Ocasión: ${prompt}${describeWeather(weather)}\n\nArmame 2 o 3 outfits.` },
+    ],
     DAY_STYLE_SCHEMA,
     lang,
   );
@@ -342,7 +348,19 @@ export const dayStyle = onCall(CALL_OPTS, async (request) => {
 const STYLES = ["Formal", "Smart casual", "Casual", "Deportivo", "Minimalista", "Streetwear"];
 const BUDGETS = ["Económico", "Medio", "Inversión"];
 const SEASONS = ["Primavera", "Verano", "Otoño", "Invierno", "Todo el año"];
-const KINDS = ["remera", "camisa", "sweater", "campera", "pantalon", "pollera", "vestido", "zapato", "zapatilla", "bolso", "accesorio"];
+const KINDS = [
+  "remera",
+  "camisa",
+  "sweater",
+  "campera",
+  "pantalon",
+  "pollera",
+  "vestido",
+  "zapato",
+  "zapatilla",
+  "bolso",
+  "accesorio",
+];
 
 type ShoppingPrefs = { styles: string[]; notes: string; budget: string; season: string };
 
@@ -408,7 +426,9 @@ const SHOPPING_SCHEMA = {
 function cleanPrefs(raw: unknown): ShoppingPrefs {
   const r = (raw ?? {}) as Partial<ShoppingPrefs>;
   const styles = Array.isArray(r.styles) ? r.styles.filter((s) => STYLES.includes(s)) : [];
-  const notes = String(r.notes ?? "").trim().slice(0, 600);
+  const notes = String(r.notes ?? "")
+    .trim()
+    .slice(0, 600);
   const budget = BUDGETS.includes(String(r.budget)) ? String(r.budget) : "Medio";
   const season = SEASONS.includes(String(r.season)) ? String(r.season) : "Todo el año";
   return { styles, notes, budget, season };
@@ -422,10 +442,7 @@ export const shoppingSuggestions = onCall(CALL_OPTS, async (request) => {
   const prefs = cleanPrefs(request.data?.prefs);
 
   const metaRef = getFirestore().collection("users").doc(uid).collection("meta").doc("shopping");
-  const [wardrobe, metaSnap] = await Promise.all([
-    loadWardrobe(uid, 3, m.needThree),
-    metaRef.get(),
-  ]);
+  const [wardrobe, metaSnap] = await Promise.all([loadWardrobe(uid, 3, m.needThree), metaRef.get()]);
   const excluded = ((metaSnap.get("excluded") as string[] | undefined) ?? []).slice(-50);
 
   const request_text = [
@@ -506,7 +523,10 @@ export const tagGarment = onCall(
 
     let image: string;
     try {
-      const [buf] = await getStorage().bucket().file(String(snap.get("thumb_path"))).download();
+      const [buf] = await getStorage()
+        .bucket()
+        .file(String(snap.get("thumb_path")))
+        .download();
       image = buf.toString("base64");
     } catch {
       throw new HttpsError("not-found", m.notFound);
@@ -660,7 +680,9 @@ export const shouldBuy = onCall(CALL_OPTS, async (request) => {
   if (!/^[A-Za-z0-9+/=]+$/.test(image) || image.length < 1000 || image.length > 4_000_000) {
     throw new HttpsError("invalid-argument", m.badImage);
   }
-  const note = String(request.data?.note ?? "").trim().slice(0, 400);
+  const note = String(request.data?.note ?? "")
+    .trim()
+    .slice(0, 400);
 
   const wardrobe = await loadWardrobe(uid, 1, m.needOne);
 
@@ -695,7 +717,14 @@ export const shouldBuy = onCall(CALL_OPTS, async (request) => {
 
 // ─────────────────────────── Inspiración desde una foto ───────────────────────────
 
-type InspireMissing = { name: string; kind: string; color_name: string; color_hex: string; material: string; why: string };
+type InspireMissing = {
+  name: string;
+  kind: string;
+  color_name: string;
+  color_hex: string;
+  material: string;
+  why: string;
+};
 type InspireResult = {
   name: string;
   reading: string;
@@ -760,7 +789,9 @@ export const inspireLook = onCall(CALL_OPTS, async (request) => {
   if (!/^[A-Za-z0-9+/=]+$/.test(image) || image.length < 1000 || image.length > 4_000_000) {
     throw new HttpsError("invalid-argument", m.badImage);
   }
-  const note = String(request.data?.note ?? "").trim().slice(0, 400);
+  const note = String(request.data?.note ?? "")
+    .trim()
+    .slice(0, 400);
 
   const wardrobe = await loadWardrobe(uid, 2, m.needTwo);
 
@@ -850,10 +881,14 @@ export const planWeek = onCall(CALL_OPTS, async (request) => {
   if (!uid) throw new HttpsError("unauthenticated", m.unauthenticated);
 
   const mode: "trip" | "week" = request.data?.mode === "week" ? "week" : "trip";
-  const destination = String(request.data?.destination ?? "").trim().slice(0, 80);
+  const destination = String(request.data?.destination ?? "")
+    .trim()
+    .slice(0, 80);
   const start = /^\d{4}-\d{2}-\d{2}$/.test(String(request.data?.start)) ? String(request.data.start) : null;
   const days = Math.max(1, Math.min(14, Math.round(Number(request.data?.days) || 0)));
-  const notes = String(request.data?.notes ?? "").trim().slice(0, 1000);
+  const notes = String(request.data?.notes ?? "")
+    .trim()
+    .slice(0, 1000);
   const forecast: DayForecast[] = Array.isArray(request.data?.forecast)
     ? (request.data.forecast as DayForecast[]).slice(0, 14).map((f) => ({
         date: String(f.date).slice(0, 10),
@@ -867,7 +902,9 @@ export const planWeek = onCall(CALL_OPTS, async (request) => {
   const wardrobe = await loadWardrobe(uid, 2, m.needTwo);
 
   const context = [
-    mode === "trip" ? `Es un VIAJE${destination ? ` a ${destination}` : ""}.` : "Es una SEMANA en casa (trabajo y vida normal).",
+    mode === "trip"
+      ? `Es un VIAJE${destination ? ` a ${destination}` : ""}.`
+      : "Es una SEMANA en casa (trabajo y vida normal).",
     `Cantidad de días: ${days}.`,
     start ? `Primer día: ${start}.` : "",
     notes ? `Planes y comentarios: ${notes}` : "",
@@ -932,7 +969,10 @@ export const garmentImage = onCall({ ...APP_CHECK, timeoutSeconds: 60, memory: "
   if (!snap.exists) throw new HttpsError("not-found", m.notFound);
 
   try {
-    const [buf] = await getStorage().bucket().file(String(snap.get("image_path"))).download();
+    const [buf] = await getStorage()
+      .bucket()
+      .file(String(snap.get("image_path")))
+      .download();
     return { image: buf.toString("base64") };
   } catch {
     throw new HttpsError("not-found", m.notFound);
