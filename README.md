@@ -105,7 +105,7 @@ Storage: users/{uid}/garments/{id}.jpg y {id}_thumb.jpg
 
 ### Cupo diario de IA
 
-El registro es abierto, así que cada cuenta tiene un tope diario para que nadie pueda gastar todo el crédito de la API: **30 pedidos** (Day Style, Shopping, ¿Lo compro?, Inspiración, Planificar y looks en pareja) y **300 etiquetados** por día (UTC). Al llegar al tope la app muestra "Llegaste al límite de pedidos a la IA por hoy". Se cambian con `DAILY_AI_LIMIT` y `DAILY_TAG_LIMIT` en `functions/.env`. El contador vive en `usage/{uid}`, que la app no puede leer ni escribir (solo las funciones).
+El registro es abierto, así que cada cuenta tiene un tope diario para que nadie pueda gastar todo el crédito de la API: **10 pedidos** (Day Style, Shopping, ¿Lo compro?, Inspiración, Planificar y looks en pareja) y **50 etiquetados** por día (UTC). Al llegar al tope la app muestra "Llegaste al límite de pedidos a la IA por hoy". Se cambian con `DAILY_AI_LIMIT` y `DAILY_TAG_LIMIT` en `functions/.env`. El contador vive en `usage/{uid}`, que la app no puede leer ni escribir (solo las funciones).
 
 ### Costo de la IA
 

@@ -10,7 +10,7 @@
 //
 // Secreto necesario:   firebase functions:secrets:set ANTHROPIC_API_KEY
 // Modelos opcionales:  ANTHROPIC_MODEL (por defecto claude-opus-5-5), ANTHROPIC_TAG_MODEL (claude-haiku-5-5)
-// Cupos diarios:       DAILY_AI_LIMIT (por defecto 30 pedidos), DAILY_TAG_LIMIT (300 etiquetados) por usuario
+// Cupos diarios:       DAILY_AI_LIMIT (por defecto 10 pedidos), DAILY_TAG_LIMIT (50 etiquetados) por usuario
 
 import { randomUUID } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
@@ -170,8 +170,8 @@ async function loadWardrobe(
 // lo lea ni lo escriba (solo el Admin SDK de las funciones).
 
 const DAILY_LIMIT = {
-  ai: Number(process.env.DAILY_AI_LIMIT ?? 30),
-  tag: Number(process.env.DAILY_TAG_LIMIT ?? 300),
+  ai: Number(process.env.DAILY_AI_LIMIT ?? 10),
+  tag: Number(process.env.DAILY_TAG_LIMIT ?? 50),
 };
 
 async function consumeQuota(uid: string, kind: keyof typeof DAILY_LIMIT, lang: Lang): Promise<void> {
