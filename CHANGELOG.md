@@ -23,11 +23,37 @@ were reconstructed from the commit history, which is why they are coarser than l
 
 ### Changed
 
-- CI runs on `main` as well as `master`, cancels superseded runs for the same ref, and takes the
-  Node version from `.nvmrc` instead of hardcoding it.
+- CI runs on `main` (the renamed default branch), cancels superseded runs for the same ref, and
+  takes the Node version from `.nvmrc` instead of hardcoding it.
 - All source files reformatted with Prettier (`printWidth: 120`). Mechanical only; the commit is
   listed in `.git-blame-ignore-revs` so `git blame` skips it.
 - `.env.example` comments are now bilingual, matching the English-first documentation.
+
+### Security
+
+Cleared 26 of the 28 `npm audit` findings (16 in the app, 12 in the functions). The functions are
+now clean; the app is down to the two `zod` advisories described below.
+
+- `vite` 5 → 7 and `vite-plugin-pwa` 0.21 → 2, which clears the `esbuild` dev-server advisory
+  (GHSA-67mh-4wv8-2f99) and pulls in `workbox-build` 7.4.
+- `react-router-dom` 6 → 7, which clears the open-redirect and SSR-hydration advisories
+  (GHSA-wrjc-x8rr-h8h6, GHSA-337j-9hxr-rhxg). Neither was reachable here — every navigation target
+  in `src/` is a literal or an internal Firestore document ID, and the app does no SSR — but the
+  upgrade removes the class of bug rather than relying on that staying true.
+- `overrides` pin `@grpc/grpc-js` to ^1.14.7 and `glob` (under `workbox-build`) to ^14, and in
+  `functions/`, `uuid` to ^11.1.1. These are transitive dependencies whose parents pin an old range
+  while a patched release exists; npm's own `audit fix` wanted to *downgrade* `firebase` to 9,
+  `vite-plugin-pwa` to 1.1 and `@imgly/background-removal` to 1.1.5 instead, which would have cost
+  real functionality. The overrides are verified by the build, the rules tests and a cold-start load
+  of `functions/lib/index.js`.
+
+Two `zod` advisories (GHSA-mrhx-c7xc-m3w5, memory exhaustion on oversized collections) remain and
+are **deliberately not fixed**. `@imgly/background-removal` 1.7.0 is the newest release and pins
+`zod@^3`; the fix only exists in `zod` 4.6.6+, whose API is incompatible. The only route `npm`
+offers is downgrading the background-removal engine by six minor versions. The advisory needs
+attacker-controlled input reaching a `zod` schema, and the only schema in that package validates the
+config object this app passes in — not user data — so it is not reachable. Revisit when IMG.LY
+ships a `zod` 4 build.
 
 ### Fixed
 
