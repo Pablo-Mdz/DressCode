@@ -13,7 +13,7 @@ import Wordmark from "../components/Wordmark";
 import { GoogleIcon } from "../components/Icons";
 import { LanguageSwitch } from "../components/AccountSheet";
 import { useI18n, type MessageKey } from "../lib/i18n";
-import PrivacySheet from "../components/PrivacySheet";
+import LegalSheet, { type LegalDoc } from "../components/LegalSheet";
 
 type Mode = "login" | "signup" | "reset";
 
@@ -40,7 +40,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [firstTime, setFirstTime] = useState(false); // "¿Es tu primera vez?" tras un login fallido
   const [info, setInfo] = useState<string | null>(null);
-  const [privacy, setPrivacy] = useState(false);
+  const [legal, setLegal] = useState<LegalDoc | null>(null);
 
   const errorMessage = (err: unknown) => {
     const key = KNOWN_ERRORS[(err as { code?: string }).code ?? ""];
@@ -196,14 +196,6 @@ export default function Login() {
                 ? t("login.submitSignup")
                 : t("login.submitReset")}
         </button>
-        {mode === "signup" && (
-          <p className="login-consent">
-            {t("login.consent")}{" "}
-            <button type="button" className="link inline-link" onClick={() => setPrivacy(true)}>
-              {t("privacy.link")}
-            </button>
-          </p>
-        )}
       </form>
 
       {mode !== "reset" && (
@@ -214,6 +206,18 @@ export default function Login() {
           <button className="btn btn-outline btn-block" onClick={google} type="button" disabled={googleBusy}>
             <GoogleIcon /> {googleBusy ? t("login.googleWait") : t("login.google")}
           </button>
+          {/* Crear la cuenta (con email o con Google) implica aceptar los términos y la privacidad. */}
+          <p className="login-consent">
+            {t("login.consent")}{" "}
+            <button type="button" className="link inline-link" onClick={() => setLegal("terms")}>
+              {t("terms.link")}
+            </button>{" "}
+            {t("login.consentAnd")}{" "}
+            <button type="button" className="link inline-link" onClick={() => setLegal("privacy")}>
+              {t("privacy.link")}
+            </button>
+            .
+          </p>
         </>
       )}
 
@@ -227,12 +231,17 @@ export default function Login() {
             {t("login.forgot")}
           </button>
         )}
-        <button className="link" onClick={() => setPrivacy(true)}>
-          {t("privacy.link")}
-        </button>
+        <div className="login-legal">
+          <button className="link" onClick={() => setLegal("terms")}>
+            {t("terms.link")}
+          </button>
+          <button className="link" onClick={() => setLegal("privacy")}>
+            {t("privacy.link")}
+          </button>
+        </div>
       </div>
 
-      <PrivacySheet open={privacy} onClose={() => setPrivacy(false)} />
+      <LegalSheet doc={legal} onClose={() => setLegal(null)} />
     </div>
   );
 }

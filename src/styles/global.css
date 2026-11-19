@@ -2029,3 +2029,9 @@ textarea::placeholder {
   font-size: 13px;
   color: var(--muted);
 }
+
+.login-legal {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}

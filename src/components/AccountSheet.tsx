@@ -4,11 +4,13 @@ import { auth } from "../lib/firebase";
 import { deleteAccount } from "../lib/account";
 import { translateDefaultFolders } from "../lib/wardrobe";
 import ConfirmSheet from "./ConfirmSheet";
-import PrivacySheet from "./PrivacySheet";
+import LegalSheet, { type LegalDoc } from "./LegalSheet";
 import { useAuth } from "../context/AuthContext";
 import { LANGS, useI18n } from "../lib/i18n";
 import Sheet from "./Sheet";
 import PartnerSection from "./PartnerSection";
+
+const SOURCE_URL = "https://github.com/Pablo-Mdz/DressCode";
 
 export default function AccountSheet({
   open,
@@ -21,7 +23,7 @@ export default function AccountSheet({
 }) {
   const { user } = useAuth();
   const { t, lang, setLang } = useI18n();
-  const [privacy, setPrivacy] = useState(false);
+  const [legal, setLegal] = useState<LegalDoc | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const changeLang = (l: "es" | "en") => {
     setLang(l);
@@ -31,7 +33,7 @@ export default function AccountSheet({
   };
   return (
     <>
-    <Sheet open={open && !privacy && !confirmDelete} onClose={onClose} title={t("account.title")} cancelLabel={t("common.close")}>
+    <Sheet open={open && !legal && !confirmDelete} onClose={onClose} title={t("account.title")} cancelLabel={t("common.close")}>
       <div className="group">
         {user?.displayName && (
           <div className="group-row">
@@ -53,17 +55,30 @@ export default function AccountSheet({
 
       <PartnerSection />
 
-      <button className="btn btn-outline btn-block" onClick={() => setPrivacy(true)}>
-        {t("account.privacy")}
-      </button>
+      <div className="two-buttons">
+        <button className="btn btn-outline" onClick={() => setLegal("terms")}>
+          {t("account.terms")}
+        </button>
+        <button className="btn btn-outline" onClick={() => setLegal("privacy")}>
+          {t("account.privacy")}
+        </button>
+      </div>
       <button className="btn btn-outline btn-block" onClick={() => signOut(auth)}>
         {t("account.signOut")}
       </button>
       <button className="btn btn-danger-text btn-block" onClick={() => setConfirmDelete(true)}>
         {t("account.delete")}
       </button>
+
+      {/* AGPL-3.0 §13: quien usa la app publicada tiene que poder obtener su código fuente. */}
+      <p className="link" style={{ textAlign: "center" }}>
+        {t("account.sourceHint")}{" "}
+        <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">
+          <strong>{t("account.source")} ↗</strong>
+        </a>
+      </p>
     </Sheet>
-    <PrivacySheet open={open && privacy} onClose={() => setPrivacy(false)} />
+    <LegalSheet doc={open ? legal : null} onClose={() => setLegal(null)} />
     <ConfirmSheet
       open={open && confirmDelete}
       title={t("account.delete")}
