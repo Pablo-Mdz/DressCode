@@ -7,7 +7,9 @@
 [![PWA](https://img.shields.io/badge/instalable-PWA-5A2D82.svg)](#6-instalarla-en-el-celular)
 [![Estrellas](https://img.shields.io/github/stars/Pablo-Mdz/DressCode?style=social)](https://github.com/Pablo-Mdz/DressCode/stargazers)
 
-Tu ropero personal y tu estilista con IA. Es una PWA (se instala en el celular desde el navegador) **y es tuya para alojar donde quieras**: la clonás, la conectás a tu propio proyecto de Firebase y tu propia clave de Anthropic, y corre bajo tu control total — tus fotos, tu base de datos, tu gasto de IA, sin pasar por ningún servidor ajeno. Tiene:
+Tu ropero personal y tu estilista con IA, en una sola app instalable. Sacale una foto a cada prenda una vez; a partir de ahí, DressCode te sugiere looks para cualquier ocasión, recrea looks a partir de una foto de inspiración, arma la valija de un viaje con el pronóstico real y te dice si una prenda que viste en una tienda vale la pena comprar — siempre usando ropa que ya tenés.
+
+Es una PWA (se instala en el celular desde el navegador), hecha con React, Firebase y la API de Claude — **y es tuya para alojar donde quieras.** La clonás, la conectás a tu propio proyecto de Firebase y tu propia clave de Anthropic, y corre bajo tu control total: tus fotos, tu base de datos, tu gasto de IA, sin pasar por ningún servidor ajeno. Tiene:
 
 <p align="center">
   <img src="docs/screenshots/wardrobe.png" width="31%" alt="Pantalla del Ropero: carpetas con prendas" />
