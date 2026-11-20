@@ -20,6 +20,11 @@ were reconstructed from the commit history, which is why they are coarser than l
 - `.nvmrc`, `.editorconfig`, `.git-blame-ignore-revs` and this changelog.
 - Package metadata (`description`, `repository`, `bugs`, `homepage`, `keywords`, `author`,
   `engines`) in both `package.json` files.
+- `.github/CODEOWNERS`, so every PR gets a reviewer assigned automatically.
+- `.gitattributes` normalising the repository to LF (every tracked file already was, so nothing
+  was rewritten) and marking the lockfiles as generated.
+- An explicit `permissions: contents: read` on the CI workflow. Without it the workflow inherits
+  the repository default, which can hand a read/write token to every step.
 
 ### Changed
 
@@ -28,6 +33,13 @@ were reconstructed from the commit history, which is why they are coarser than l
 - All source files reformatted with Prettier (`printWidth: 120`). Mechanical only; the commit is
   listed in `.git-blame-ignore-revs` so `git blame` skips it.
 - `.env.example` comments are now bilingual, matching the English-first documentation.
+- The code of conduct is now the Contributor Covenant 2.1 rather than a short custom text, so the
+  line and the enforcement ladder are explicit. The "small, friendly project" framing is kept as
+  the opening paragraph.
+- Issue templates migrated from Markdown to GitHub's YAML forms, which can mark fields required.
+  The bug form now asks up front whether the reporter is on the hosted app or self-hosting, since
+  that changes the answer, and the feature form flags ideas that add a Claude call, since those
+  land on everyone's API bill.
 
 ### Security
 

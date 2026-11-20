@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest an idea for DressCode
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For anything substantial, this issue is the right first step — it saves you writing a
+        PR that doesn't get merged. See [CONTRIBUTING.md](https://github.com/Pablo-Mdz/DressCode/blob/main/CONTRIBUTING.md).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: What are you trying to do that the app doesn't support well today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How you imagine it working. It doesn't need to be fully fleshed out.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Any other way to solve the same problem, including workarounds you already use.
+
+  - type: checkboxes
+    id: ai
+    attributes:
+      label: Does this change what the AI does?
+      description: |
+        Features that change the prompts or add a Claude call affect everyone's API bill,
+        so they get more scrutiny.
+      options:
+        - label: This would add or change a Claude API call

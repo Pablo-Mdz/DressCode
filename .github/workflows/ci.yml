@@ -5,6 +5,11 @@ on:
   push:
     branches: [main]
 
+# This workflow only reads the code. Without this block it would inherit the
+# repository default, which can be read/write on every token it hands out.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
