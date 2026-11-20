@@ -21,6 +21,7 @@ were reconstructed from the commit history, which is why they are coarser than l
 - Package metadata (`description`, `repository`, `bugs`, `homepage`, `keywords`, `author`,
   `engines`) in both `package.json` files.
 - `.github/CODEOWNERS`, so every PR gets a reviewer assigned automatically.
+- `.github/FUNDING.yml` pointing at GitHub Sponsors.
 - `.gitattributes` normalising the repository to LF (every tracked file already was, so nothing
   was rewritten) and marking the lockfiles as generated.
 - An explicit `permissions: contents: read` on the CI workflow. Without it the workflow inherits
