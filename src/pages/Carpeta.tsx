@@ -28,10 +28,6 @@ import { BackIcon, CameraIcon, EditIcon, GalleryIcon, PlusIcon, SparkleIcon, Tra
 const WHITE_BG_KEY = "dresscode.whiteBackground";
 const BG_READY_KEY = "dresscode.backgroundReady"; // el modelo de fondo blanco ya se descargó una vez
 
-function isSafePreviewUrl(url: string): boolean {
-  return url.startsWith("blob:") || url.startsWith("data:image/");
-}
-
 // Fondo blanco por defecto: lo que eligió la persona; si nunca eligió, apagado en datos móviles lentos
 // o con ahorro de datos (la primera vez descarga ~40 MB).
 function defaultWhite(): boolean {
@@ -672,7 +668,6 @@ function AddGarmentSheet({
       ? t("batch.upload", { n: batch.length })
       : t("common.save");
   const canSave = !busy && !checking && (batch.length > 0 || (!!file && !processing));
-  const safePreview = preview && isSafePreviewUrl(preview) ? preview : null;
 
   return (
     <Sheet
@@ -708,8 +703,8 @@ function AddGarmentSheet({
         </div>
       ) : (
         <div className="photo photo-preview">
-          {safePreview ? (
-            <img src={safePreview} alt={t("garment.preview")} />
+          {preview ? (
+            <img src={preview} alt={t("garment.preview")} />
           ) : (
             <Silhouette kind="camisa" width={150} strokeWidth={1} />
           )}
