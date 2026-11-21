@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Quita el fondo de la foto de una prenda DENTRO del teléfono (gratis, sin servidores)
 // y la centra sobre fondo blanco, como en una tienda online.
 //

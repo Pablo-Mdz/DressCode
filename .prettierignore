@@ -1,0 +1,11 @@
+dist
+functions/lib
+node_modules
+package-lock.json
+LICENSE
+*.png
+*.svg
+
+# Docs are hand-formatted: Prettier would only swap *emphasis* for _emphasis_
+# and re-pad the tables, which is churn with no gain.
+*.md

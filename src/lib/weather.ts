@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { DayForecast, Weather } from "./types";
 import type { Lang } from "./i18n";
 
@@ -95,7 +98,9 @@ export async function fetchForecast(
   let longitude: number;
   if (destination.trim()) {
     const q = new URLSearchParams({ name: destination.trim(), count: "1", language: lang });
-    const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${q}`).then((r) => (r.ok ? r.json() : null));
+    const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${q}`).then((r) =>
+      r.ok ? r.json() : null,
+    );
     const place = geo?.results?.[0];
     if (!place) return null;
     latitude = place.latitude;
@@ -106,7 +111,8 @@ export async function fetchForecast(
     longitude = pos.coords.longitude;
   }
 
-  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const params = new URLSearchParams({
     latitude: latitude.toFixed(3),
     longitude: longitude.toFixed(3),
@@ -142,7 +148,9 @@ export async function fetchWeather(lang: Lang = "es"): Promise<Weather> {
   if (!res.ok) throw new Error("weather unavailable");
   const d = await res.json();
   return {
-    description: (lang === "en" ? CODES_EN : CODES_ES)[d.current.weather_code] ?? (lang === "en" ? "Changeable" : "Clima variable"),
+    description:
+      (lang === "en" ? CODES_EN : CODES_ES)[d.current.weather_code] ??
+      (lang === "en" ? "Changeable" : "Clima variable"),
     temperature: d.current.temperature_2m,
     min: d.daily.temperature_2m_min[0],
     max: d.daily.temperature_2m_max[0],

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 // Traducciones de la interfaz. El español es la fuente; el inglés debe tener las mismas claves.
@@ -57,26 +60,37 @@ const es = {
   "privacy.link": "Privacidad y datos",
   "terms.link": "Términos de uso",
   "terms.title": "Términos de uso",
-  "terms.who": "DressCode es un proyecto personal y sin fines comerciales de Pablo Cigoy (Alemania). Contacto: pablocigoy@gmail.com.",
+  "terms.who":
+    "DressCode es un proyecto personal y sin fines comerciales de Pablo Cigoy (Alemania). Contacto: pablocigoy@gmail.com.",
   "terms.free": "El uso es gratis: no hay pagos, publicidad ni venta de datos.",
   "terms.age": "Para usarla tenés que tener al menos 16 años.",
-  "terms.content": "Subí solo fotos de tu ropa o fotos que tengas derecho a usar, y no subas fotos de otras personas sin su permiso. Las fotos siguen siendo tuyas: se usan solo para darte el servicio.",
-  "terms.ai": "Las sugerencias las genera una IA y pueden tener errores. Son ideas de estilo, no consejos profesionales.",
-  "terms.service": "Cada cuenta tiene un límite diario de pedidos a la IA. El servicio se ofrece tal como está y puede tener cortes o cambios; en la medida en que la ley lo permita, sin garantías.",
-  "terms.misuse": "Las cuentas que hagan un uso abusivo (automatizado, ilegal o que dañe el servicio) pueden suspenderse o eliminarse.",
-  "terms.delete": "Podés dejar de usar DressCode cuando quieras y borrar tu cuenta con todos tus datos desde Cuenta → Eliminar mi cuenta.",
+  "terms.content":
+    "Subí solo fotos de tu ropa o fotos que tengas derecho a usar, y no subas fotos de otras personas sin su permiso. Las fotos siguen siendo tuyas: se usan solo para darte el servicio.",
+  "terms.ai":
+    "Las sugerencias las genera una IA y pueden tener errores. Son ideas de estilo, no consejos profesionales.",
+  "terms.service":
+    "Cada cuenta tiene un límite diario de pedidos a la IA. El servicio se ofrece tal como está y puede tener cortes o cambios; en la medida en que la ley lo permita, sin garantías.",
+  "terms.misuse":
+    "Las cuentas que hagan un uso abusivo (automatizado, ilegal o que dañe el servicio) pueden suspenderse o eliminarse.",
+  "terms.delete":
+    "Podés dejar de usar DressCode cuando quieras y borrar tu cuenta con todos tus datos desde Cuenta → Eliminar mi cuenta.",
   "terms.law": "Si estos términos cambian, se avisa en la app. Rige la ley de Alemania.",
   "legal.updated": "Última actualización: noviembre de 2026.",
   "privacy.title": "Privacidad y datos",
   "privacy.controller": "Responsable de tus datos: Pablo Cigoy (Alemania) · pablocigoy@gmail.com.",
   "privacy.cost": "DressCode no tiene costo ni pagos dentro de la app.",
-  "privacy.storage": "Tus fotos y datos se guardan en tu cuenta (Google Firebase) y solo vos podés verlos. Si vinculás tu ropero con tu pareja, ve solo las prendas que aparecen en los looks en pareja.",
-  "privacy.ai": "Cuando pedís un look, etiquetás una prenda o analizás una foto, las fotos chicas de tus prendas y lo que escribís se envían a la API de Claude (Anthropic) para generar la respuesta. Anthropic no usa los datos de su API para entrenar modelos.",
+  "privacy.storage":
+    "Tus fotos y datos se guardan en tu cuenta (Google Firebase) y solo vos podés verlos. Si vinculás tu ropero con tu pareja, ve solo las prendas que aparecen en los looks en pareja.",
+  "privacy.ai":
+    "Cuando pedís un look, etiquetás una prenda o analizás una foto, las fotos chicas de tus prendas y lo que escribís se envían a la API de Claude (Anthropic) para generar la respuesta. Anthropic no usa los datos de su API para entrenar modelos.",
   "privacy.device": "El fondo blanco se hace en tu teléfono: para ese paso la foto no sale de tu dispositivo.",
   "privacy.location": "Tu ubicación se usa solo si activás el clima, para pedir el pronóstico a Open-Meteo.",
-  "privacy.hosting": "La app se sirve desde Netlify. La primera vez que usás el fondo blanco, el modelo se descarga del CDN de IMG.LY (no se envía ninguna foto).",
-  "privacy.retention": "Tus datos se guardan mientras tengas la cuenta. Podés borrar cualquier prenda, o tu cuenta con todos tus datos, desde Cuenta → Eliminar mi cuenta.",
-  "privacy.rights": "Según el RGPD podés pedir acceso, corrección o borrado de tus datos escribiendo al email de contacto, y presentar un reclamo ante una autoridad de protección de datos.",
+  "privacy.hosting":
+    "La app se sirve desde Netlify. La primera vez que usás el fondo blanco, el modelo se descarga del CDN de IMG.LY (no se envía ninguna foto).",
+  "privacy.retention":
+    "Tus datos se guardan mientras tengas la cuenta. Podés borrar cualquier prenda, o tu cuenta con todos tus datos, desde Cuenta → Eliminar mi cuenta.",
+  "privacy.rights":
+    "Según el RGPD podés pedir acceso, corrección o borrado de tus datos escribiendo al email de contacto, y presentar un reclamo ante una autoridad de protección de datos.",
   "ai.photoNote": "La foto se envía a la IA (Claude, de Anthropic) solo para analizarla; no se guarda.",
   "login.noAccount": "¿No tenés cuenta?",
   "login.signup": "Registrate",
@@ -103,7 +117,8 @@ const es = {
   "account.delete": "Eliminar mi cuenta",
   "account.source": "Código fuente",
   "account.sourceHint": "DressCode es software libre (AGPL-3.0).",
-  "account.deleteMessage": "Se borran tu ropero, tus fotos, tu historial, tu lista de compras y tu cuenta. No se puede deshacer.",
+  "account.deleteMessage":
+    "Se borran tu ropero, tus fotos, tu historial, tu lista de compras y tu cuenta. No se puede deshacer.",
   "account.deleteRecent": "Por seguridad, cerrá sesión, volvé a entrar y probá de nuevo. Tus datos ya se borraron.",
 
   // Ropero
@@ -126,7 +141,7 @@ const es = {
   "folder.rename": "Renombrar carpeta",
   "folder.renameTitle": "Renombrar",
   "folder.delete": "Eliminar carpeta",
-  "folder.deleteMessage": "Se eliminará \"{name}\"{extra}. Esta acción no se puede deshacer.",
+  "folder.deleteMessage": 'Se eliminará "{name}"{extra}. Esta acción no se puede deshacer.',
   "folder.deleteExtra": " y sus {items}",
   "folder.deleteUploads": "Las fotos que se estaban subiendo a esta carpeta se cancelan.",
   "folder.emptyTitle": "Todavía no hay prendas acá",
@@ -136,7 +151,8 @@ const es = {
   "folder.renameError": "No pude renombrar",
   "garment.new": "Nueva prenda",
   "garment.newMany": "{n} prendas nuevas",
-  "garment.aiNote": "La foto se guarda en tu cuenta y la IA (Claude, de Anthropic) la analiza para etiquetarla y elegir la carpeta.",
+  "garment.aiNote":
+    "La foto se guarda en tu cuenta y la IA (Claude, de Anthropic) la analiza para etiquetarla y elegir la carpeta.",
   "garment.notImage": "Ese archivo no es una foto. Elegí una imagen (JPG, PNG o HEIC).",
   "garment.skipped": "Se omitieron {n} archivos que no eran fotos.",
   "garment.sortedOne": "La IA la guardó en “{folder}”.",
@@ -146,7 +162,8 @@ const es = {
   "garment.gallery": "Galería",
   "batch.upload": "Subir {n}",
   "batch.remove": "Quitar foto",
-  "batch.hint": "Las fotos se suben de a una, en segundo plano. La IA completa la descripción y las etiquetas de cada prenda.",
+  "batch.hint":
+    "Las fotos se suben de a una, en segundo plano. La IA completa la descripción y las etiquetas de cada prenda.",
   "batch.limit": "Se pueden subir hasta {n} fotos por vez: tomé las primeras {n}.",
   "batch.progress": "Subiendo prendas: faltan {n}. Dejá la app abierta hasta que termine.",
   "batch.waiting": "En cola",
@@ -234,7 +251,8 @@ const es = {
   "shop.question": "¿Qué estilo buscás?",
   "shop.style": "Estilo · podés elegir varios",
   "shop.notes": "Contale algo más (opcional)",
-  "shop.notesPlaceholder": "Ej: trabajo en oficina pero los viernes son informales. Quiero algo más moderno y evitar el marrón.",
+  "shop.notesPlaceholder":
+    "Ej: trabajo en oficina pero los viernes son informales. Quiero algo más moderno y evitar el marrón.",
   "shop.budget": "Presupuesto",
   "shop.season": "Temporada",
   "shop.analyzing": "Analizando tu ropero…",
@@ -385,7 +403,8 @@ const es = {
 
   // Pareja
   "couple.section": "Pareja",
-  "couple.hint": "Vinculá tu ropero con el de tu pareja para pedir looks coordinados. Cada uno sigue viendo solo sus prendas.",
+  "couple.hint":
+    "Vinculá tu ropero con el de tu pareja para pedir looks coordinados. Cada uno sigue viendo solo sus prendas.",
   "couple.emailPlaceholder": "email de tu pareja",
   "couple.invite": "Invitar",
   "couple.inviting": "Enviando…",
@@ -464,26 +483,36 @@ const en: Record<MessageKey, string> = {
   "privacy.link": "Privacy & data",
   "terms.link": "Terms of use",
   "terms.title": "Terms of use",
-  "terms.who": "DressCode is a personal, non-commercial project by Pablo Cigoy (Germany). Contact: pablocigoy@gmail.com.",
+  "terms.who":
+    "DressCode is a personal, non-commercial project by Pablo Cigoy (Germany). Contact: pablocigoy@gmail.com.",
   "terms.free": "It is free to use: no payments, no ads and no selling of data.",
   "terms.age": "You must be at least 16 years old to use it.",
-  "terms.content": "Only upload photos of your clothes or photos you have the right to use, and don't upload photos of other people without their permission. Your photos stay yours: they are only used to provide the service.",
-  "terms.ai": "Suggestions are generated by AI and can contain mistakes. They are style ideas, not professional advice.",
-  "terms.service": "Each account has a daily limit of AI requests. The service is provided as is and may have outages or changes; to the extent permitted by law, without warranties.",
+  "terms.content":
+    "Only upload photos of your clothes or photos you have the right to use, and don't upload photos of other people without their permission. Your photos stay yours: they are only used to provide the service.",
+  "terms.ai":
+    "Suggestions are generated by AI and can contain mistakes. They are style ideas, not professional advice.",
+  "terms.service":
+    "Each account has a daily limit of AI requests. The service is provided as is and may have outages or changes; to the extent permitted by law, without warranties.",
   "terms.misuse": "Accounts used abusively (automated, illegal or harmful to the service) may be suspended or deleted.",
-  "terms.delete": "You can stop using DressCode at any time and delete your account with all your data from Account → Delete my account.",
+  "terms.delete":
+    "You can stop using DressCode at any time and delete your account with all your data from Account → Delete my account.",
   "terms.law": "If these terms change, the app will say so. German law applies.",
   "legal.updated": "Last updated: November 2026.",
   "privacy.title": "Privacy & data",
   "privacy.controller": "Responsible for your data: Pablo Cigoy (Germany) · pablocigoy@gmail.com.",
   "privacy.cost": "DressCode has no cost and no payments inside the app.",
-  "privacy.storage": "Your photos and data are stored in your account (Google Firebase) and only you can see them. If you link your wardrobe with your partner, they only see the items used in your couple looks.",
-  "privacy.ai": "When you ask for a look, tag an item or analyze a photo, small versions of your item photos and what you write are sent to the Claude API (Anthropic) to create the answer. Anthropic does not use API data to train its models.",
+  "privacy.storage":
+    "Your photos and data are stored in your account (Google Firebase) and only you can see them. If you link your wardrobe with your partner, they only see the items used in your couple looks.",
+  "privacy.ai":
+    "When you ask for a look, tag an item or analyze a photo, small versions of your item photos and what you write are sent to the Claude API (Anthropic) to create the answer. Anthropic does not use API data to train its models.",
   "privacy.device": "The white background is made on your phone: for that step the photo does not leave your device.",
   "privacy.location": "Your location is only used if you turn on the weather, to get the forecast from Open-Meteo.",
-  "privacy.hosting": "The app is served by Netlify. The first time you use the white background, the model is downloaded from IMG.LY's CDN (no photo is sent).",
-  "privacy.retention": "Your data is kept while you have an account. You can delete any item, or your account with all your data, from Account → Delete my account.",
-  "privacy.rights": "Under the GDPR you can ask for access to, correction or deletion of your data by writing to the contact email, and lodge a complaint with a data protection authority.",
+  "privacy.hosting":
+    "The app is served by Netlify. The first time you use the white background, the model is downloaded from IMG.LY's CDN (no photo is sent).",
+  "privacy.retention":
+    "Your data is kept while you have an account. You can delete any item, or your account with all your data, from Account → Delete my account.",
+  "privacy.rights":
+    "Under the GDPR you can ask for access to, correction or deletion of your data by writing to the contact email, and lodge a complaint with a data protection authority.",
   "ai.photoNote": "The photo is sent to AI (Anthropic's Claude) only to analyze it; it is not stored.",
   "login.noAccount": "No account yet?",
   "login.signup": "Sign up",
@@ -509,8 +538,10 @@ const en: Record<MessageKey, string> = {
   "account.delete": "Delete my account",
   "account.source": "Source code",
   "account.sourceHint": "DressCode is free software (AGPL-3.0).",
-  "account.deleteMessage": "Your wardrobe, photos, history, shopping list and account will be deleted. This can't be undone.",
-  "account.deleteRecent": "For security, sign out, sign in again and try once more. Your data has already been deleted.",
+  "account.deleteMessage":
+    "Your wardrobe, photos, history, shopping list and account will be deleted. This can't be undone.",
+  "account.deleteRecent":
+    "For security, sign out, sign in again and try once more. Your data has already been deleted.",
 
   "wardrobe.hello": "Hello, {name}",
   "wardrobe.startTitle": "Get started in 2 steps",
@@ -530,7 +561,7 @@ const en: Record<MessageKey, string> = {
   "folder.rename": "Rename folder",
   "folder.renameTitle": "Rename",
   "folder.delete": "Delete folder",
-  "folder.deleteMessage": "\"{name}\"{extra} will be deleted. This can't be undone.",
+  "folder.deleteMessage": '"{name}"{extra} will be deleted. This can\'t be undone.',
   "folder.deleteExtra": " and its {items}",
   "folder.deleteUploads": "Photos still uploading to this folder will be cancelled.",
   "folder.emptyTitle": "No items here yet",
@@ -540,7 +571,8 @@ const en: Record<MessageKey, string> = {
   "folder.renameError": "I couldn't rename it",
   "garment.new": "New item",
   "garment.newMany": "{n} new items",
-  "garment.aiNote": "The photo is saved in your account and the AI (Anthropic's Claude) analyzes it to tag it and pick the folder.",
+  "garment.aiNote":
+    "The photo is saved in your account and the AI (Anthropic's Claude) analyzes it to tag it and pick the folder.",
   "garment.notImage": "That file is not a photo. Please choose an image (JPG, PNG or HEIC).",
   "garment.skipped": "{n} files were skipped because they are not photos.",
   "garment.sortedOne": "The AI saved it in “{folder}”.",
@@ -634,7 +666,8 @@ const en: Record<MessageKey, string> = {
   "shop.question": "What style are you looking for?",
   "shop.style": "Style · pick as many as you like",
   "shop.notes": "Anything else? (optional)",
-  "shop.notesPlaceholder": "E.g. I work in an office but Fridays are casual. I want something more modern and no brown.",
+  "shop.notesPlaceholder":
+    "E.g. I work in an office but Fridays are casual. I want something more modern and no brown.",
   "shop.budget": "Budget",
   "shop.season": "Season",
   "shop.analyzing": "Analyzing your wardrobe…",
@@ -656,7 +689,8 @@ const en: Record<MessageKey, string> = {
   "shop.inList": "On your list",
   "shop.haveIt": "I have it",
   "shop.emptyTitle": "Find out what to buy next",
-  "shop.emptyText": "Pick a style and tap “Suggest what to buy”. I'll look at your wardrobe and tell you what it's missing.",
+  "shop.emptyText":
+    "Pick a style and tap “Suggest what to buy”. I'll look at your wardrobe and tell you what it's missing.",
   "shop.listTitle": "My list",
   "shop.listEmpty": "Your list is empty",
   "shop.listEmptyText": "Add suggestions to keep them handy when you go shopping.",
@@ -781,7 +815,8 @@ const en: Record<MessageKey, string> = {
   "bg.errorExisting": "I couldn't remove the background from this photo.",
 
   "couple.section": "Partner",
-  "couple.hint": "Link your wardrobe with your partner's to get coordinated looks. Each of you still only sees your own items.",
+  "couple.hint":
+    "Link your wardrobe with your partner's to get coordinated looks. Each of you still only sees your own items.",
   "couple.emailPlaceholder": "your partner's email",
   "couple.invite": "Invite",
   "couple.inviting": "Sending…",
@@ -867,7 +902,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const t = useCallback((key: MessageKey, vars?: Record<string, string | number>) => translate(key, vars, lang), [lang]);
+  const t = useCallback(
+    (key: MessageKey, vars?: Record<string, string | number>) => translate(key, vars, lang),
+    [lang],
+  );
   const plural = useCallback(
     (base: "garments" | "folders" | "shop.newLooks" | "tags.untagged", n: number) =>
       translate(`${base}.${n === 1 ? "one" : "other"}` as MessageKey, { n }, lang),

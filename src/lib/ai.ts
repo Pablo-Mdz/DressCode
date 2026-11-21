@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { httpsCallable } from "firebase/functions";
 import { functions } from "./firebase";
 import { imageToBase64 } from "./image";
@@ -7,11 +10,7 @@ import type { BuyResult, DayForecast, GarmentTags, Outfit } from "./types";
 const callTag = httpsCallable<
   { garmentId: string; lang: Lang; sortFolder?: boolean },
   { tags: GarmentTags; description: string | null; folder_id?: string }
->(
-  functions,
-  "tagGarment",
-  { timeout: 60_000 },
-);
+>(functions, "tagGarment", { timeout: 60_000 });
 
 const callImage = httpsCallable<{ garmentId: string; lang: Lang }, { image: string }>(functions, "garmentImage", {
   timeout: 60_000,
@@ -27,9 +26,13 @@ export async function fetchGarmentImage(garmentId: string, lang: Lang): Promise<
   }
 }
 
-const callBuy = httpsCallable<{ image: string; note: string; lang: Lang }, { result: BuyResult }>(functions, "shouldBuy", {
-  timeout: 300_000,
-});
+const callBuy = httpsCallable<{ image: string; note: string; lang: Lang }, { result: BuyResult }>(
+  functions,
+  "shouldBuy",
+  {
+    timeout: 300_000,
+  },
+);
 
 function friendly(err: unknown, fallback: string): Error {
   const message = err instanceof Error ? err.message : "";
@@ -49,9 +52,13 @@ export async function tagGarment(garmentId: string, lang: Lang, sortFolder = fal
   }
 }
 
-const callInspire = httpsCallable<{ image: string; note: string; lang: Lang }, { outfit: Outfit }>(functions, "inspireLook", {
-  timeout: 300_000,
-});
+const callInspire = httpsCallable<{ image: string; note: string; lang: Lang }, { outfit: Outfit }>(
+  functions,
+  "inspireLook",
+  {
+    timeout: 300_000,
+  },
+);
 
 // Inspiración: recrea con el ropero el look de una foto. Queda guardado en el historial.
 export async function inspireLook(file: File, note: string, lang: Lang): Promise<Outfit> {

@@ -1,5 +1,17 @@
 {
   "name": "dresscode-functions",
+  "version": "0.1.0",
+  "description": "Cloud Functions for DressCode: every Claude API call runs here, server-side.",
+  "homepage": "https://github.com/Pablo-Mdz/DressCode#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pablo-Mdz/DressCode.git",
+    "directory": "functions"
+  },
+  "bugs": {
+    "url": "https://github.com/Pablo-Mdz/DressCode/issues"
+  },
+  "author": "Pablo Cigoy",
   "license": "AGPL-3.0-only",
   "private": true,
   "main": "lib/index.js",
@@ -17,5 +29,8 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

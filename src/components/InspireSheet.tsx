@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useEffect, useRef, useState } from "react";
 import { inspireLook } from "../lib/ai";
 import { isReadableImage } from "../lib/image";
@@ -82,7 +85,7 @@ export default function InspireSheet({ open, onClose }: { open: boolean; onClose
       setGarments(await loadOutfitGarments([o]));
       setOutfit(o);
       setAdded(new Set());
-    addedRef.current.clear();
+      addedRef.current.clear();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("insp.error"));
     } finally {
@@ -132,13 +135,21 @@ export default function InspireSheet({ open, onClose }: { open: boolean; onClose
       <input ref={galleryRef} type="file" accept="image/*" hidden onChange={onPick} />
 
       <div className={`photo photo-preview ${outfit ? "photo-small" : ""}`}>
-        {preview ? <img src={preview} alt={t("garment.preview")} /> : <Silhouette kind="vestido" width={140} strokeWidth={1} />}
+        {preview ? (
+          <img src={preview} alt={t("garment.preview")} />
+        ) : (
+          <Silhouette kind="vestido" width={140} strokeWidth={1} />
+        )}
       </div>
 
       {!outfit && (
         <>
           <div className="two-buttons">
-            <button className={`btn ${file ? "btn-outline" : "btn-primary"}`} onClick={() => galleryRef.current?.click()} disabled={busy}>
+            <button
+              className={`btn ${file ? "btn-outline" : "btn-primary"}`}
+              onClick={() => galleryRef.current?.click()}
+              disabled={busy}
+            >
               <GalleryIcon width={20} height={20} /> {t("garment.gallery")}
             </button>
             <button className="btn btn-outline" onClick={() => cameraRef.current?.click()} disabled={busy}>

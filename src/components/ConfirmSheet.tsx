@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useState } from "react";
 import Sheet from "./Sheet";
 import { useI18n } from "../lib/i18n";

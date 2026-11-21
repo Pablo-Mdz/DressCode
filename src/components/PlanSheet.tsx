@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useEffect, useState } from "react";
 import { planWeek } from "../lib/ai";
 import { loadOutfitGarments } from "../lib/outfits";
@@ -97,16 +100,31 @@ export default function PlanSheet({ open, onClose }: { open: boolean; onClose: (
             )}
             <label className="group-row">
               <span>{mode === "trip" ? t("plan.start") : t("plan.startWeek")}</span>
-              <input type="date" value={start} onChange={(e) => e.target.value && setStart(e.target.value)} disabled={busy} />
+              <input
+                type="date"
+                value={start}
+                onChange={(e) => e.target.value && setStart(e.target.value)}
+                disabled={busy}
+              />
             </label>
             <div className="group-row">
               <span>{t("plan.days")}</span>
               <div className="stepper">
-                <button type="button" onClick={() => setDays((d) => Math.max(1, d - 1))} disabled={busy || days <= 1} aria-label="−">
+                <button
+                  type="button"
+                  onClick={() => setDays((d) => Math.max(1, d - 1))}
+                  disabled={busy || days <= 1}
+                  aria-label="−"
+                >
                   −
                 </button>
                 <span>{days}</span>
-                <button type="button" onClick={() => setDays((d) => Math.min(14, d + 1))} disabled={busy || days >= 14} aria-label="+">
+                <button
+                  type="button"
+                  onClick={() => setDays((d) => Math.min(14, d + 1))}
+                  disabled={busy || days >= 14}
+                  aria-label="+"
+                >
                   +
                 </button>
               </div>

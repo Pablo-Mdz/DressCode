@@ -78,13 +78,31 @@ npm install
 npm run dev
 ```
 
-### 4. Publicar en Netlify
+### 4. Publicar
+
+Hay dos opciones. Netlify es lo que usa la instancia hosteada; Firebase Hosting deja todo dentro del proyecto que ya creaste en el paso 1.
+
+**Opción A — Netlify**
 
 1. En Netlify: *Add new site* → *Import an existing project* → GitHub → `DressCode`. El build ya está configurado en `netlify.toml`.
 2. En *Site configuration → Environment variables*, cargá las mismas variables de `.env.example`:
    `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` y `VITE_FIREBASE_FUNCTIONS_REGION`.
 3. Hacé un nuevo deploy.
-4. En Firebase → **Authentication → Configuración → Dominios autorizados**, agregá el dominio de Netlify (por ejemplo `dresscode.netlify.app`). Sin este paso, el login con Google no funciona.
+
+> `netlify.toml` desactiva el escáner de secretos de Netlify para los valores `VITE_FIREBASE_*`. Es a propósito, no un descuido: la configuración web de Firebase es [pública por diseño](https://firebase.google.com/docs/projects/api-keys) — viaja dentro del bundle de JavaScript. Lo que protege tus datos son las reglas de seguridad y App Check, no mantener esos strings ocultos.
+
+**Opción B — Firebase Hosting**
+
+Sin una segunda cuenta, en el mismo proyecto que Firestore y Storage:
+
+```bash
+npm run build
+firebase deploy --only hosting
+```
+
+El rewrite para la SPA y los headers de caché de los assets ya están en `firebase.json`. El build lee tu `.env.local`, así que mantenelo actualizado (o cargá las variables en el CI que haga el build).
+
+**En cualquiera de los dos casos:** en Firebase → **Authentication → Configuración → Dominios autorizados**, agregá el dominio que publicaste (`tu-sitio.netlify.app` o `tu-proyecto.web.app`). Sin este paso, el login con Google no funciona.
 
 ### 5. App Check (recomendado)
 
@@ -170,8 +188,10 @@ Si DressCode te resulta útil, una ⭐ en el repo ayuda a que otras personas lo 
 |---|---|
 | `npm run dev` | Servidor local |
 | `npm run build` | Build de producción (en `dist/`) |
+| `npm run lint` | ESLint sobre la app, las funciones y los scripts |
+| `npm run format` | Formatea todo con Prettier (`format:check` solo reporta) |
 | `npm run icons` | Regenera los íconos PNG de la PWA |
 | `cd functions && npm run build` | Compila la Cloud Function |
-| `npm run test:rules` | Prueba las reglas de Firestore y Storage contra los emuladores (necesita `firebase-tools` global y Java) |
+| `npm run test:rules` | Prueba las reglas de Firestore y Storage contra los emuladores (necesita Java; descarga `firebase-tools` al vuelo) |
 
 Los mismos chequeos (build, typecheck de las funciones y tests de reglas) corren en GitHub Actions en cada PR (`.github/workflows/ci.yml`).

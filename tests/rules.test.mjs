@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Tests de las reglas de seguridad (firestore.rules y storage.rules) contra los emuladores de Firebase.
 // Correr con: npm run test:rules   (necesita firebase-tools instalado globalmente y Java)
 
@@ -124,7 +127,9 @@ describe("storage: users/{uid}/**", () => {
   });
 
   test("no se suben archivos que no son imágenes", async () => {
-    await assertFails(uploadBytes(ref(st(ANA), "users/ana/garments/doc.pdf"), jpeg, { contentType: "application/pdf" }));
+    await assertFails(
+      uploadBytes(ref(st(ANA), "users/ana/garments/doc.pdf"), jpeg, { contentType: "application/pdf" }),
+    );
   });
 
   test("no se sube a la carpeta de otro", async () => {

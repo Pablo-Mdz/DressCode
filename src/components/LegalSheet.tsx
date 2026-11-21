@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useI18n, type MessageKey } from "../lib/i18n";
 import Sheet from "./Sheet";
 
