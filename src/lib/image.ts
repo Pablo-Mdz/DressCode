@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Redimensiona y comprime en el teléfono antes de subir:
 import { translate } from "./i18n";
 

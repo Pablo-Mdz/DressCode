@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { auth } from "../lib/firebase";

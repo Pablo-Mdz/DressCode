@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useState, type FormEvent } from "react";
 import {
   createUserWithEmailAndPassword,
@@ -94,7 +97,8 @@ export default function Login() {
     } catch (err) {
       setError(errorMessage(err));
       // Firebase no dice si el email existe: a quien entra por primera vez le ofrecemos crear la cuenta.
-      if (mode === "login" && KNOWN_ERRORS[(err as { code?: string }).code ?? ""] === "auth/invalid-credential") setFirstTime(true);
+      if (mode === "login" && KNOWN_ERRORS[(err as { code?: string }).code ?? ""] === "auth/invalid-credential")
+        setFirstTime(true);
     } finally {
       setBusy(false);
     }
@@ -136,7 +140,14 @@ export default function Login() {
       ) : (
         <div className="segmented login-tabs" role="tablist" aria-label={t("login.tabLogin")}>
           {(["login", "signup"] as const).map((m) => (
-            <button key={m} type="button" role="tab" aria-selected={mode === m} aria-pressed={mode === m} onClick={() => switchMode(m)}>
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              aria-pressed={mode === m}
+              onClick={() => switchMode(m)}
+            >
               {m === "login" ? t("login.tabLogin") : t("login.tabSignup")}
             </button>
           ))}

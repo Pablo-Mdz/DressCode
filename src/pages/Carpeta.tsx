@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -244,10 +247,22 @@ export default function Carpeta() {
           <BackIcon width={22} height={22} /> {t("tab.wardrobe")}
         </Link>
         <div className="navbar-actions">
-          <button className="icon-btn" onClick={() => setRenaming(true)} aria-label={t("folder.rename")} title={t("folder.rename")} disabled={!folder}>
+          <button
+            className="icon-btn"
+            onClick={() => setRenaming(true)}
+            aria-label={t("folder.rename")}
+            title={t("folder.rename")}
+            disabled={!folder}
+          >
             <EditIcon width={21} height={21} />
           </button>
-          <button className="icon-btn" onClick={() => setConfirmFolder(true)} aria-label={t("folder.delete")} title={t("folder.delete")} disabled={!folder}>
+          <button
+            className="icon-btn"
+            onClick={() => setConfirmFolder(true)}
+            aria-label={t("folder.delete")}
+            title={t("folder.delete")}
+            disabled={!folder}
+          >
             <TrashIcon width={21} height={21} />
           </button>
         </div>
@@ -328,20 +343,22 @@ export default function Carpeta() {
               </div>
             </button>
           ))}
-          {garments.filter((g) => matches(g.tags, season, formality)).map((g, i) => (
-            <button
-              key={g.id}
-              className="garment-card fade-in"
-              style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
-              onClick={() => setSelected(g)}
-            >
-              <div className="photo">
-                <img src={g.thumb_url} alt={g.description ?? t("garment.alt")} loading="lazy" />
-                {tagging.has(g.id) && <span className="photo-badge">{t("tags.analyzing")}</span>}
-              </div>
-              {g.description && <span className="garment-desc">{g.description}</span>}
-            </button>
-          ))}
+          {garments
+            .filter((g) => matches(g.tags, season, formality))
+            .map((g, i) => (
+              <button
+                key={g.id}
+                className="garment-card fade-in"
+                style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
+                onClick={() => setSelected(g)}
+              >
+                <div className="photo">
+                  <img src={g.thumb_url} alt={g.description ?? t("garment.alt")} loading="lazy" />
+                  {tagging.has(g.id) && <span className="photo-badge">{t("tags.analyzing")}</span>}
+                </div>
+                {g.description && <span className="garment-desc">{g.description}</span>}
+              </button>
+            ))}
         </div>
       )}
 
@@ -379,7 +396,8 @@ export default function Carpeta() {
           t("folder.deleteMessage", {
             name: folder?.name ?? "",
             extra: garments?.length ? t("folder.deleteExtra", { items: plural("garments", garments.length) }) : "",
-          }) + (uploads.some((u) => u.folderId === folderId && u.status !== "error") ? ` ${t("folder.deleteUploads")}` : "")
+          }) +
+          (uploads.some((u) => u.folderId === folderId && u.status !== "error") ? ` ${t("folder.deleteUploads")}` : "")
         }
         confirmLabel={t("folder.delete")}
         onClose={() => setConfirmFolder(false)}
@@ -397,7 +415,9 @@ export default function Carpeta() {
           onClose={() => setSelected(null)}
           onChanged={(g, moved) => {
             if (!moved) setSelected(g);
-            setGarments((prev) => (moved ? prev!.filter((x) => x.id !== g.id) : prev!.map((x) => (x.id === g.id ? g : x))));
+            setGarments((prev) =>
+              moved ? prev!.filter((x) => x.id !== g.id) : prev!.map((x) => (x.id === g.id ? g : x)),
+            );
           }}
           onDeleted={(g) => setGarments((prev) => prev!.filter((x) => x.id !== g.id))}
           tagging={tagging.has(selected.id)}
@@ -619,7 +639,9 @@ function AddGarmentSheet({
     if (!picked.length) return;
     setError(null);
     setChecking(true);
-    const ok = (await Promise.all(picked.map(isReadableImage))).map((r, i) => (r ? picked[i] : null)).filter(Boolean) as File[];
+    const ok = (await Promise.all(picked.map(isReadableImage)))
+      .map((r, i) => (r ? picked[i] : null))
+      .filter(Boolean) as File[];
     setChecking(false);
     setSkipped(picked.length - ok.length);
     if (!ok.length) {
@@ -640,7 +662,11 @@ function AddGarmentSheet({
 
   const hasPhoto = batch.length > 0 || !!original;
   const processing = bgStatus !== null;
-  const saveLabel = busy ? t("common.saving") : batch.length ? t("batch.upload", { n: batch.length }) : t("common.save");
+  const saveLabel = busy
+    ? t("common.saving")
+    : batch.length
+      ? t("batch.upload", { n: batch.length })
+      : t("common.save");
   const canSave = !busy && !checking && (batch.length > 0 || (!!file && !processing));
 
   return (
@@ -677,7 +703,11 @@ function AddGarmentSheet({
         </div>
       ) : (
         <div className="photo photo-preview">
-          {preview ? <img src={preview} alt={t("garment.preview")} /> : <Silhouette kind="camisa" width={150} strokeWidth={1} />}
+          {preview ? (
+            <img src={preview} alt={t("garment.preview")} />
+          ) : (
+            <Silhouette kind="camisa" width={150} strokeWidth={1} />
+          )}
           {bgStatus && (
             <span className="photo-badge">
               {bgStatus.phase === "download" ? t("bg.downloading", { n: bgStatus.percent }) : t("bg.processing")}
@@ -699,7 +729,11 @@ function AddGarmentSheet({
       {error && <p className="msg msg-error">{error}</p>}
 
       <div className="two-buttons">
-        <button className={`btn ${hasPhoto ? "btn-outline" : "btn-primary"}`} onClick={() => cameraRef.current?.click()} disabled={busy}>
+        <button
+          className={`btn ${hasPhoto ? "btn-outline" : "btn-primary"}`}
+          onClick={() => cameraRef.current?.click()}
+          disabled={busy}
+        >
           <CameraIcon width={20} height={20} /> {t("garment.camera")}
         </button>
         <button className="btn btn-outline" onClick={() => galleryRef.current?.click()} disabled={busy}>
@@ -831,7 +865,11 @@ function GarmentSheet({
         onClose={onClose}
         title={t("garment.title")}
         cancelLabel={t("common.close")}
-        action={{ label: busy ? t("common.saving") : t("common.save"), onClick: save, disabled: busy || tagging || bgBusy !== null }}
+        action={{
+          label: busy ? t("common.saving") : t("common.save"),
+          onClick: save,
+          disabled: busy || tagging || bgBusy !== null,
+        }}
       >
         <div className="photo photo-preview">
           <img src={garment.image_url} alt={garment.description ?? t("garment.alt")} />
@@ -970,7 +1008,12 @@ function FilterRow<T extends string>({
         {allLabel}
       </button>
       {options.map((o) => (
-        <button key={o} className="chip chip-sm" aria-pressed={value === o} onClick={() => onChange(value === o ? null : o)}>
+        <button
+          key={o}
+          className="chip chip-sm"
+          aria-pressed={value === o}
+          onClick={() => onChange(value === o ? null : o)}
+        >
           {label(o)}
         </button>
       ))}

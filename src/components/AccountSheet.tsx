@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
@@ -33,60 +36,65 @@ export default function AccountSheet({
   };
   return (
     <>
-    <Sheet open={open && !legal && !confirmDelete} onClose={onClose} title={t("account.title")} cancelLabel={t("common.close")}>
-      <div className="group">
-        {user?.displayName && (
+      <Sheet
+        open={open && !legal && !confirmDelete}
+        onClose={onClose}
+        title={t("account.title")}
+        cancelLabel={t("common.close")}
+      >
+        <div className="group">
+          {user?.displayName && (
+            <div className="group-row">
+              <span>{t("common.name")}</span>
+              <span className="muted">{user.displayName}</span>
+            </div>
+          )}
           <div className="group-row">
-            <span>{t("common.name")}</span>
-            <span className="muted">{user.displayName}</span>
+            <span>{t("common.email")}</span>
+            <span className="muted ellipsis">{user?.email}</span>
           </div>
-        )}
-        <div className="group-row">
-          <span>{t("common.email")}</span>
-          <span className="muted ellipsis">{user?.email}</span>
         </div>
-      </div>
 
-      <div className="stack-sm">
-        <span className="label">{t("account.language")}</span>
-        <LanguageSwitch lang={lang} setLang={changeLang} label={t("account.language")} />
-        <span className="label">{t("account.languageHint")}</span>
-      </div>
+        <div className="stack-sm">
+          <span className="label">{t("account.language")}</span>
+          <LanguageSwitch lang={lang} setLang={changeLang} label={t("account.language")} />
+          <span className="label">{t("account.languageHint")}</span>
+        </div>
 
-      <PartnerSection />
+        <PartnerSection />
 
-      <div className="two-buttons">
-        <button className="btn btn-outline" onClick={() => setLegal("terms")}>
-          {t("account.terms")}
+        <div className="two-buttons">
+          <button className="btn btn-outline" onClick={() => setLegal("terms")}>
+            {t("account.terms")}
+          </button>
+          <button className="btn btn-outline" onClick={() => setLegal("privacy")}>
+            {t("account.privacy")}
+          </button>
+        </div>
+        <button className="btn btn-outline btn-block" onClick={() => signOut(auth)}>
+          {t("account.signOut")}
         </button>
-        <button className="btn btn-outline" onClick={() => setLegal("privacy")}>
-          {t("account.privacy")}
+        <button className="btn btn-danger-text btn-block" onClick={() => setConfirmDelete(true)}>
+          {t("account.delete")}
         </button>
-      </div>
-      <button className="btn btn-outline btn-block" onClick={() => signOut(auth)}>
-        {t("account.signOut")}
-      </button>
-      <button className="btn btn-danger-text btn-block" onClick={() => setConfirmDelete(true)}>
-        {t("account.delete")}
-      </button>
 
-      {/* AGPL-3.0 §13: quien usa la app publicada tiene que poder obtener su código fuente. */}
-      <p className="link" style={{ textAlign: "center" }}>
-        {t("account.sourceHint")}{" "}
-        <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">
-          <strong>{t("account.source")} ↗</strong>
-        </a>
-      </p>
-    </Sheet>
-    <LegalSheet doc={open ? legal : null} onClose={() => setLegal(null)} />
-    <ConfirmSheet
-      open={open && confirmDelete}
-      title={t("account.delete")}
-      message={t("account.deleteMessage")}
-      confirmLabel={t("account.delete")}
-      onClose={() => setConfirmDelete(false)}
-      onConfirm={deleteAccount}
-    />
+        {/* AGPL-3.0 §13: quien usa la app publicada tiene que poder obtener su código fuente. */}
+        <p className="link" style={{ textAlign: "center" }}>
+          {t("account.sourceHint")}{" "}
+          <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">
+            <strong>{t("account.source")} ↗</strong>
+          </a>
+        </p>
+      </Sheet>
+      <LegalSheet doc={open ? legal : null} onClose={() => setLegal(null)} />
+      <ConfirmSheet
+        open={open && confirmDelete}
+        title={t("account.delete")}
+        message={t("account.deleteMessage")}
+        confirmLabel={t("account.delete")}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={deleteAccount}
+      />
     </>
   );
 }

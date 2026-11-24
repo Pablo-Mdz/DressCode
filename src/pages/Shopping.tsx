@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -52,7 +55,10 @@ export default function Shopping() {
         const folderName = Object.fromEntries(fs.map((f) => [f.id, f.name]));
         setGarments(
           Object.fromEntries(
-            gs.map((g) => [g.id, { ...g, label: shortLabel(g.description) || folderName[g.folder_id] || t("garment.alt") }]),
+            gs.map((g) => [
+              g.id,
+              { ...g, label: shortLabel(g.description) || folderName[g.folder_id] || t("garment.alt") },
+            ]),
           ),
         );
         setPrefs(shopping.prefs);
@@ -242,7 +248,11 @@ export default function Shopping() {
           <div className="chips">
             {(["Todo", "Esencial", "Para variar"] as Filter[]).map((f) => (
               <button key={f} className="chip" aria-pressed={filter === f} onClick={() => setFilter(f)}>
-                {f === "Todo" ? t("shop.filter.all") : f === "Esencial" ? t("shop.filter.essential") : t("shop.filter.variety")}
+                {f === "Todo"
+                  ? t("shop.filter.all")
+                  : f === "Esencial"
+                    ? t("shop.filter.essential")
+                    : t("shop.filter.variety")}
               </button>
             ))}
           </div>
@@ -269,9 +279,7 @@ export default function Shopping() {
                       <span className="swatch" style={{ background: item.color_hex }} />
                       {item.color_name} · {item.material}
                     </span>
-                    {item.new_looks > 0 && (
-                      <span className="gain">{plural("shop.newLooks", item.new_looks)}</span>
-                    )}
+                    {item.new_looks > 0 && <span className="gain">{plural("shop.newLooks", item.new_looks)}</span>}
                   </div>
                 </div>
 
@@ -294,7 +302,10 @@ export default function Shopping() {
                 )}
 
                 <div className="buy-actions">
-                  <button className={`btn ${inList ? "btn-outline-dark" : "btn-primary"}`} onClick={() => toggleList(item)}>
+                  <button
+                    className={`btn ${inList ? "btn-outline-dark" : "btn-primary"}`}
+                    onClick={() => toggleList(item)}
+                  >
                     {inList ? (
                       <>
                         <CheckIcon width={18} height={18} /> {t("shop.inList")}
@@ -334,7 +345,12 @@ export default function Shopping() {
         }}
       />
 
-      <Sheet open={listOpen} onClose={() => setListOpen(false)} title={t("shop.listTitle")} cancelLabel={t("common.close")}>
+      <Sheet
+        open={listOpen}
+        onClose={() => setListOpen(false)}
+        title={t("shop.listTitle")}
+        cancelLabel={t("common.close")}
+      >
         {list.length === 0 ? (
           <div className="empty">
             <p className="empty-title">{t("shop.listEmpty")}</p>

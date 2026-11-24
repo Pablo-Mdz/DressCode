@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Genera los íconos PNG de la PWA a partir de un SVG (solo trazos, sin fuentes).
 // Uso: npm run icons
 import sharp from "sharp";

@@ -125,12 +125,30 @@ npm install
 npm run dev
 ```
 
-### 4. Deploy to Netlify
+### 4. Deploy
+
+Two options. Netlify is what the hosted instance uses; Firebase Hosting keeps everything inside the project you already created in step 1.
+
+**Option A — Netlify**
 
 1. *Add new site* → *Import an existing project* → GitHub → `DressCode`. The build is configured in `netlify.toml`.
 2. Add the variables from `.env.example` under *Site configuration → Environment variables*.
 3. Trigger a new deploy.
-4. In Firebase → **Authentication → Settings → Authorised domains**, add your Netlify domain. Google sign-in won't work without it.
+
+> `netlify.toml` switches off Netlify's secret scanner for the `VITE_FIREBASE_*` values. That's deliberate, not an oversight: the Firebase web config is [public by design](https://firebase.google.com/docs/projects/api-keys) — it ships inside the JavaScript bundle. What protects your data is the security rules plus App Check, not keeping those strings hidden.
+
+**Option B — Firebase Hosting**
+
+No second account, same project as Firestore and Storage:
+
+```bash
+npm run build
+firebase deploy --only hosting
+```
+
+The SPA rewrite and the asset cache headers are already in `firebase.json`. The build reads your local `.env.local`, so keep that file current (or set the variables in whatever CI runs the build).
+
+**Either way:** in Firebase → **Authentication → Settings → Authorised domains**, add the domain you published to (`your-site.netlify.app` or `your-project.web.app`). Google sign-in won't work without it.
 
 ### 5. App Check (recommended)
 
@@ -174,9 +192,11 @@ and redeploy with `firebase deploy --only functions`. The tagging model can be c
 |---|---|
 | `npm run dev` | Local dev server |
 | `npm run build` | Production build (to `dist/`) |
+| `npm run lint` | ESLint over the app, the functions and the scripts |
+| `npm run format` | Formats everything with Prettier (`format:check` only reports) |
 | `npm run icons` | Regenerates the PWA PNG icons |
 | `cd functions && npm run build` | Compiles the Cloud Functions |
-| `npm run test:rules` | Tests the Firestore and Storage security rules against the emulators (needs global `firebase-tools` and Java) |
+| `npm run test:rules` | Tests the Firestore and Storage security rules against the emulators (needs Java; fetches `firebase-tools` on demand) |
 
 The same checks (build, functions typecheck and rules tests) run on GitHub Actions for every PR (`.github/workflows/ci.yml`).
 

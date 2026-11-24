@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { arrayUnion, deleteDoc, doc, getDoc, getDocs, orderBy, query, setDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { auth, db, functions } from "./firebase";
@@ -35,11 +38,10 @@ export async function loadShopping(): Promise<{ prefs: ShoppingPrefs; result: Sh
   return { prefs, result: (data.result as ShoppingResult) ?? null };
 }
 
-const callShopping = httpsCallable<{ prefs: ShoppingPrefs; lang: Lang }, { prefs: ShoppingPrefs; result: ShoppingResult }>(
-  functions,
-  "shoppingSuggestions",
-  { timeout: 300_000 },
-);
+const callShopping = httpsCallable<
+  { prefs: ShoppingPrefs; lang: Lang },
+  { prefs: ShoppingPrefs; result: ShoppingResult }
+>(functions, "shoppingSuggestions", { timeout: 300_000 });
 
 export async function requestShopping(prefs: ShoppingPrefs, lang: Lang): Promise<ShoppingResult> {
   try {

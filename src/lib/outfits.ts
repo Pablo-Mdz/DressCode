@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { deleteDoc, doc, getDocs, limit, orderBy, query, updateDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "./firebase";
@@ -6,9 +9,13 @@ import type { Garment, Outfit, Weather } from "./types";
 import { translate, type Lang } from "./i18n";
 
 // La IA puede tardar: damos hasta 5 minutos (igual que el timeout de la función).
-const dayStyle = httpsCallable<{ prompt: string; weather: Weather | null; lang: Lang }, { outfit: Outfit }>(functions, "dayStyle", {
-  timeout: 300_000,
-});
+const dayStyle = httpsCallable<{ prompt: string; weather: Weather | null; lang: Lang }, { outfit: Outfit }>(
+  functions,
+  "dayStyle",
+  {
+    timeout: 300_000,
+  },
+);
 
 export async function requestDayStyle(prompt: string, weather: Weather | null, lang: Lang): Promise<Outfit> {
   try {

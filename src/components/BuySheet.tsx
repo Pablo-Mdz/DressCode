@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useEffect, useRef, useState } from "react";
 import { shouldBuy } from "../lib/ai";
 import { isReadableImage } from "../lib/image";
@@ -122,13 +125,21 @@ export default function BuySheet({
       <input ref={galleryRef} type="file" accept="image/*" hidden onChange={onPick} />
 
       <div className={`photo photo-preview ${result ? "photo-small" : ""}`}>
-        {preview ? <img src={preview} alt={t("garment.preview")} /> : <Silhouette kind="campera" width={140} strokeWidth={1} />}
+        {preview ? (
+          <img src={preview} alt={t("garment.preview")} />
+        ) : (
+          <Silhouette kind="campera" width={140} strokeWidth={1} />
+        )}
       </div>
 
       {!result && (
         <>
           <div className="two-buttons">
-            <button className={`btn ${file ? "btn-outline" : "btn-primary"}`} onClick={() => cameraRef.current?.click()} disabled={busy}>
+            <button
+              className={`btn ${file ? "btn-outline" : "btn-primary"}`}
+              onClick={() => cameraRef.current?.click()}
+              disabled={busy}
+            >
               <CameraIcon width={20} height={20} /> {t("garment.camera")}
             </button>
             <button className="btn btn-outline" onClick={() => galleryRef.current?.click()} disabled={busy}>
@@ -170,7 +181,9 @@ export default function BuySheet({
       {result && (
         <div className="verdict fade-in">
           <div className="verdict-head">
-            <span className={`verdict-badge verdict-${result.verdict}`}>{t(`buy.verdict.${result.verdict}` as MessageKey)}</span>
+            <span className={`verdict-badge verdict-${result.verdict}`}>
+              {t(`buy.verdict.${result.verdict}` as MessageKey)}
+            </span>
             {result.new_looks > 0 && <span className="gain">{plural("shop.newLooks", result.new_looks)}</span>}
           </div>
           <h3 className="verdict-title">{result.headline}</h3>
@@ -220,7 +233,11 @@ export default function BuySheet({
 
           <div className="buy-actions">
             {result.verdict !== "skip" && (
-              <button className={`btn ${added ? "btn-outline-dark" : "btn-primary"}`} onClick={addToList} disabled={added}>
+              <button
+                className={`btn ${added ? "btn-outline-dark" : "btn-primary"}`}
+                onClick={addToList}
+                disabled={added}
+              >
                 {added ? (
                   <>
                     <CheckIcon width={18} height={18} /> {t("shop.inList")}

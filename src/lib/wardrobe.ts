@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import {
   collection,
   deleteDoc,
@@ -35,7 +38,8 @@ function uid(): string {
   return id;
 }
 
-export const userCol = (name: "folders" | "garments" | "outfits" | "shoppingList") => collection(db, "users", uid(), name);
+export const userCol = (name: "folders" | "garments" | "outfits" | "shoppingList") =>
+  collection(db, "users", uid(), name);
 
 // La primera vez que el usuario entra le creamos las carpetas por defecto.
 export async function ensureDefaultFolders(userId: string) {
@@ -54,7 +58,9 @@ export async function ensureDefaultFolders(userId: string) {
 // Al cambiar de idioma, las carpetas por defecto (sin renombrar) pasan al idioma nuevo.
 export async function translateDefaultFolders(lang: keyof typeof DEFAULT_FOLDERS): Promise<boolean> {
   const folders = await listFolders();
-  const others = Object.entries(DEFAULT_FOLDERS).filter(([l]) => l !== lang).map(([, names]) => names);
+  const others = Object.entries(DEFAULT_FOLDERS)
+    .filter(([l]) => l !== lang)
+    .map(([, names]) => names);
   let changed = false;
   for (const f of folders) {
     for (const names of others) {

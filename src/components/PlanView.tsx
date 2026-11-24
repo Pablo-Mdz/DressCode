@@ -1,9 +1,20 @@
+// SPDX-FileCopyrightText: © 2026 Pablo Cigoy
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { useI18n } from "../lib/i18n";
 import type { Garment, Outfit, Plan } from "../lib/types";
 import OutfitCard from "./OutfitCard";
 
 // Plan de semana o viaje: resumen, valija (todas las prendas, sin repetir) y un look por día.
-export default function PlanView({ outfit, plan, garments }: { outfit: Outfit; plan: Plan; garments: Record<string, Garment> }) {
+export default function PlanView({
+  outfit,
+  plan,
+  garments,
+}: {
+  outfit: Outfit;
+  plan: Plan;
+  garments: Record<string, Garment>;
+}) {
   const { t, locale } = useI18n();
   const packing = [...new Set(outfit.suggestions.flatMap((s) => s.garment_ids))].filter((id) => garments[id]);
   const forecastByDate = new Map(plan.forecast.map((f) => [f.date, f]));

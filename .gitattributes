@@ -1,0 +1,16 @@
+# Normalise to LF in the repository and on checkout, matching .editorconfig,
+# so a contributor on Windows doesn't turn every file into a CRLF diff.
+* text=auto eol=lf
+
+# Binary: never touch these.
+*.png binary
+*.jpg binary
+*.ico binary
+*.wasm binary
+
+# Generated — collapsed by default in GitHub's PR view, still expandable, and left
+# out of the language stats. Deliberately NOT marked `-diff`: a lockfile diff is how
+# you'd spot a dependency being swapped under you.
+package-lock.json linguist-generated=true
+functions/package-lock.json linguist-generated=true
+LICENSE linguist-vendored=true

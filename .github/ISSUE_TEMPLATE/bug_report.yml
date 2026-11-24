@@ -1,0 +1,68 @@
+name: Bug report
+description: Something in the app doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before you post: please redact API keys, tokens and personal data from any log or
+        screenshot. If this is a security vulnerability, report it privately instead —
+        see [SECURITY.md](https://github.com/Pablo-Mdz/DressCode/blob/main/SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: A clear description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Tap '...'
+        3. See the error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: dropdown
+    id: instance
+    attributes:
+      label: Which instance are you using?
+      options:
+        - The hosted app
+        - My own self-hosted instance
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: iPhone 14, Safari 18 — or Pixel 8, Chrome 131
+    validations:
+      required: true
+
+  - type: textarea
+    id: selfhost
+    attributes:
+      label: Non-default setup
+      description: Self-hosters only — anything you changed from the defaults (region, models, quotas, App Check).
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: |
+        Console errors, Cloud Functions logs (`firebase functions:log`), screenshots.
+        A screenshot helps a lot for anything visual.
